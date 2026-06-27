@@ -1,0 +1,14 @@
+beautifulsoup4
+colorama
+httpx
+lxml
+python-dotenv
+psycopg2-binary
+requests
+urllib3
+
+# Optional: enable SQLMap integration in SQLi scans (must also be on PATH)
+# sqlmap
+
+# Optional: WAF bypass via headless browser
+# botasaurus
