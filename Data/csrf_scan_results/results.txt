@@ -1,0 +1,7 @@
+# CSRF scan results
+
+--- 2026-06-27T00:32:13 | https://demo.testfire.net/search.jsp?query=test | 0 confirmed, 1 candidate(s) ---
+  [suspected/medium] CSRF (Express.js missing token) param=_csrf
+
+--- 2026-06-27T03:30:23 | https://demo.testfire.net/login.jsp | 0 confirmed, 1 candidate(s) ---
+  [suspected/medium] CSRF (Express.js missing token) param=_csrf

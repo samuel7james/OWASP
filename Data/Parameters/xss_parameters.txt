@@ -1,0 +1,6 @@
+GET|https://demo.testfire.net/index.jsp?content=*||content
+GET|https://demo.testfire.net/search.jsp?query=*||query
+POST|https://demo.testfire.net/doLogin|uid=*&passw=*&btnSubmit=*|uid,passw,btnSubmit|uid,passw,btnSubmit
+POST|https://demo.testfire.net/doSubscribe|txtEmail=*&btnSubmit=*|txtEmail,btnSubmit|txtEmail,btnSubmit
+POST|https://demo.testfire.net/sendFeedback|cfile=*&name=*&email_addr=*&subject=*&comments=*&submit=*&reset=*|cfile,name,email_addr,subject,comments,submit,reset|cfile,name,email_addr,subject,comments,submit,reset
+COOKIE|https://demo.testfire.net/login.jsp|JSESSIONID=*|JSESSIONID
