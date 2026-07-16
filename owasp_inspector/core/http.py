@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import random
+import ssl
 
 import httpx
 
@@ -18,6 +19,23 @@ UA_POOL = [
 ]
 
 RETRYABLE_STATUS_CODES = {429, 500, 502, 503, 504}
+
+
+def _permissive_tls_context() -> ssl.SSLContext:
+    """This tool must be able to *reach* targets running old/weak TLS
+    configurations — a common real state for exactly the internal/lab/legacy
+    systems this project's authorized-testing scope covers. Python's modern
+    secure-by-default context refuses to even negotiate TLS 1.0/1.1 (and
+    OpenSSL's default SECLEVEL=2 blocks the ciphers that go with them), which
+    would make such a target simply unreachable rather than assessable —
+    `verify=False` alone does not fix this, it only skips certificate checks.
+    """
+    ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE
+    ctx.minimum_version = ssl.TLSVersion.MINIMUM_SUPPORTED
+    ctx.set_ciphers("DEFAULT:@SECLEVEL=0")
+    return ctx
 
 
 class AsyncHttpClient:
@@ -44,9 +62,10 @@ class AsyncHttpClient:
         self.backoff_base_seconds = backoff_base_seconds
         self._semaphore = asyncio.Semaphore(max_concurrency)
         self._rate_limiter = RateLimiter(min_request_interval_seconds)
+        verify: bool | ssl.SSLContext = ssl.create_default_context() if verify_tls else _permissive_tls_context()
         self._client = httpx.AsyncClient(
             timeout=httpx.Timeout(timeout),
-            verify=verify_tls,
+            verify=verify,
             follow_redirects=True,
             headers=headers or {},
             transport=transport,

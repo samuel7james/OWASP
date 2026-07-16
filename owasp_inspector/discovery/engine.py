@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 
 from owasp_inspector.core.http import AsyncHttpClient
+from owasp_inspector.discovery.cookies import extract_cookie_flags
 from owasp_inspector.discovery.crawl import crawl
 from owasp_inspector.discovery.fingerprint import fingerprint_target
 from owasp_inspector.discovery.models import DiscoveryResult
@@ -44,4 +45,5 @@ async def run_discovery(http: AsyncHttpClient, url: str, *, max_pages: int = 40)
         sitemap_urls=sitemap_urls,
         crawled_urls=crawled_urls,
         targets=targets,
+        cookie_flags=extract_cookie_flags(initial_response) if initial_response is not None else [],
     )

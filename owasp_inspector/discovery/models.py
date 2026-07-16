@@ -51,6 +51,14 @@ class ParamTarget:
 
 
 @dataclass
+class CookieFlags:
+    name: str
+    secure: bool
+    httponly: bool
+    samesite: str | None
+
+
+@dataclass
 class DiscoveryResult:
     target_url: str
     final_url: str
@@ -64,6 +72,7 @@ class DiscoveryResult:
     sitemap_urls: list[str] = field(default_factory=list)
     crawled_urls: list[str] = field(default_factory=list)
     targets: list[ParamTarget] = field(default_factory=list)
+    cookie_flags: list[CookieFlags] = field(default_factory=list)
 
     @property
     def injectable_param_count(self) -> int:

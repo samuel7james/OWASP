@@ -60,6 +60,9 @@ def scan(
     formats: str = typer.Option("html,json", "--format", "-f", help="Comma-separated report formats: json, markdown, html, pdf"),
     output_dir: Path = typer.Option(Path("Data") / "reports", "--output-dir", "-o", help="Directory to write reports into."),
     yes: bool = typer.Option(False, "--yes", "-y", help="Skip the interactive authorization prompt (same as OWASP_INSPECTOR_AUTHORIZED=1)."),
+    resume: bool = typer.Option(
+        False, "--resume", help="Reuse the cached discovery result for this URL instead of re-crawling, if one completed within the last hour."
+    ),
 ):
     """Run a fully automated OWASP Top 10 assessment against URL and write reports.
 
@@ -84,7 +87,7 @@ def scan(
 
     with console.status("Running discovery and assessment modules...", spinner="dots"):
         try:
-            result = asyncio.run(run_scan(url, profile=profile, max_pages=max_pages))
+            result = asyncio.run(run_scan(url, profile=profile, max_pages=max_pages, resume=resume))
         except OwaspInspectorError as exc:
             console.print(f"[bold red]Scan failed:[/bold red] {exc}")
             raise typer.Exit(code=1) from None

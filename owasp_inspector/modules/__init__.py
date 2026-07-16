@@ -5,9 +5,13 @@ it below — the core engine never needs to know about it directly.
 """
 
 from owasp_inspector.modules import (  # noqa: F401
+    auth_failures,
+    crypto_failures,
     csrf,
     idor,
+    insecure_design,
     misconfiguration,
+    software_integrity,
     sqli,
     ssrf,
     vulnerable_components,

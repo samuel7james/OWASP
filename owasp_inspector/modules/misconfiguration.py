@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+import re
+import urllib.parse
+import uuid
+
 from owasp_inspector.core.models import Confidence, Finding, Severity
 from owasp_inspector.core.module import Module, ScanContext
 from owasp_inspector.core.registry import register_module
@@ -32,13 +36,29 @@ _SECURITY_HEADERS = {
 }
 
 _ONLY_APPLIES_TO_HTTPS = {"strict-transport-security"}
+_REFERENCE = "https://owasp.org/Top10/A05_2021-Security_Misconfiguration/"
+
+_GIT_HEAD_RE = re.compile(r"^ref:\s+refs/")
+_ENV_LINE_RE = re.compile(r"^[A-Z_][A-Z0-9_]*=", re.MULTILINE)
+_DS_STORE_MAGIC = b"\x00\x00\x00\x01Bud1"
+
+# (path, content-matcher, title, severity) — each matcher is a strong,
+# format-specific signature (not just "got a 200") to avoid false positives
+# from soft-404 pages that return 200 for anything.
+_SENSITIVE_PATH_CHECKS = [
+    ("/.git/HEAD", lambda r: bool(_GIT_HEAD_RE.match(r.text.strip())), "Exposed .git repository (HEAD readable)", Severity.HIGH),
+    ("/.git/config", lambda r: "[core]" in r.text, "Exposed .git repository (config readable)", Severity.HIGH),
+    ("/.env", lambda r: bool(_ENV_LINE_RE.search(r.text)) and "<html" not in r.text.lower(), "Exposed .env file", Severity.CRITICAL),
+    ("/.DS_Store", lambda r: r.content.startswith(_DS_STORE_MAGIC), "Exposed .DS_Store file", Severity.LOW),
+]
 
 
 @register_module
 class MisconfigurationModule(Module):
-    """Reads directly from the Phase 4 discovery result (headers + TLS) —
-    no additional requests of its own. First module to actually demonstrate
-    the discovery-engine payoff: one shared crawl/probe, many modules read.
+    """Missing security headers and TLS trust issues read directly from the
+    Phase 4 discovery result (zero extra requests) plus a bounded set of
+    sensitive-path exposure checks with a soft-404 baseline probe first, so a
+    server that returns 200 for everything doesn't produce false positives.
     """
 
     name = "security-misconfiguration"
@@ -85,8 +105,43 @@ class MisconfigurationModule(Module):
                     url=discovery.final_url,
                     evidence=f"Negotiated TLS version: {discovery.tls.version}",
                     remediation="Install a valid certificate from a trusted CA; ensure hostname and expiry are correct.",
-                    references=["https://owasp.org/Top10/A05_2021-Security_Misconfiguration/"],
+                    references=[_REFERENCE],
                 )
             )
 
+        findings.extend(await self._check_sensitive_paths(context))
+        return findings
+
+    async def _check_sensitive_paths(self, context: ScanContext) -> list[Finding]:
+        base_url = context.discovery.final_url
+        canary_path = f"/__owasp_inspector_probe_{uuid.uuid4().hex}"
+        baseline = await context.http.get(urllib.parse.urljoin(base_url, canary_path))
+        if baseline is not None and baseline.status_code == 200:
+            return []  # soft-404: server returns 200 for anything, these checks would be unreliable
+
+        findings: list[Finding] = []
+        for path, matcher, title, severity in _SENSITIVE_PATH_CHECKS:
+            url = urllib.parse.urljoin(base_url, path)
+            response = await context.http.get(url)
+            if response is None or response.status_code != 200:
+                continue
+            try:
+                matched = matcher(response)
+            except Exception:
+                continue
+            if not matched:
+                continue
+            findings.append(
+                Finding(
+                    module=self.name,
+                    owasp_category=self.owasp_category,
+                    title=title,
+                    severity=severity,
+                    confidence=Confidence.CONFIRMED,
+                    description=f"{url} is publicly accessible and matches the expected format of a sensitive file.",
+                    url=url,
+                    remediation=f"Remove or block public access to {path}; it should never be deployed to a web-accessible path.",
+                    references=[_REFERENCE],
+                )
+            )
         return findings

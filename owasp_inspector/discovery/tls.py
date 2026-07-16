@@ -15,6 +15,23 @@ def _name(entries) -> str | None:
     return ", ".join(parts) or None
 
 
+def _weak_protocol_context() -> ssl.SSLContext:
+    # Deliberately permissive: this connection exists only to observe what
+    # protocol version the *server* is willing to negotiate down to, for the
+    # A02 "deprecated TLS version" check. Python's default context refuses
+    # TLS 1.0/1.1 (and OpenSSL's default SECLEVEL=2 blocks the weak ciphers
+    # that go with them) unconditionally — meaning without this, a server
+    # that *only* speaks TLS 1.0 fails the handshake outright and the check
+    # can never actually fire. This context doesn't touch any real request;
+    # it's a read-only probe of a socket that's closed immediately after.
+    ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE
+    ctx.minimum_version = ssl.TLSVersion.MINIMUM_SUPPORTED
+    ctx.set_ciphers("DEFAULT:@SECLEVEL=0")
+    return ctx
+
+
 def _fetch_cert_sync(hostname: str, port: int, timeout: float) -> TlsInfo:
     # Verify first so valid certs yield full parsed fields — getpeercert() only
     # returns parsed subject/issuer/expiry when the chain actually validated;
@@ -34,6 +51,8 @@ def _fetch_cert_sync(hostname: str, port: int, timeout: float) -> TlsInfo:
         )
     except ssl.SSLCertVerificationError:
         pass
+    except ssl.SSLError:
+        return _fetch_with_weak_protocol_fallback(hostname, port, timeout)
 
     # Self-signed/expired/hostname-mismatched cert — common on labs and internal
     # targets. Still confirm TLS reachability/version; flag the trust failure
@@ -48,6 +67,21 @@ def _fetch_cert_sync(hostname: str, port: int, timeout: float) -> TlsInfo:
         inspected=True,
         version=version,
         error="certificate not verifiable (self-signed, expired, or hostname mismatch)",
+    )
+
+
+def _fetch_with_weak_protocol_fallback(hostname: str, port: int, timeout: float) -> TlsInfo:
+    # Reached only when a modern-minimum handshake failed outright (not a
+    # cert-trust failure) — the last real possibility worth checking before
+    # giving up is that the server only speaks a deprecated protocol version.
+    ctx = _weak_protocol_context()
+    with socket.create_connection((hostname, port), timeout=timeout) as sock:
+        with ctx.wrap_socket(sock, server_hostname=hostname) as tls_sock:
+            version = tls_sock.version()
+    return TlsInfo(
+        inspected=True,
+        version=version,
+        error="certificate not verifiable, and/or only a deprecated TLS version is supported",
     )
 
 

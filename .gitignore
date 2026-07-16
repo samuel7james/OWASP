@@ -19,4 +19,5 @@ Data/csrf_scan_results/
 Data/Parameters/
 Data/reports/
 Data/scan_history/
+Data/scan_cache/
 Logic/Data/
