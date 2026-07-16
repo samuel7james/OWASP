@@ -1,9 +1,9 @@
 beautifulsoup4
 colorama
 httpx
-lxml
 python-dotenv
 psycopg2-binary
+pydantic-settings
 requests
 urllib3
 

@@ -5,9 +5,9 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+from Data.Queries.q_reports import save_report as _q_reports
 from Data.Queries.q_scans import create_scan as _q_create_scan
 from Data.Queries.q_scans import update_scan_status as _q_update_scan
-from Data.Queries.q_reports import save_report as _q_reports
 
 
 class DatabaseManager:
@@ -16,7 +16,7 @@ class DatabaseManager:
             "host": host or os.getenv("DB_HOST", "localhost"),
             "database": database or os.getenv("DB_DATABASE", "vulnerability_scanner"),
             "user": user or os.getenv("DB_USER", "postgres"),
-            "password": password or os.getenv("DB_PASSWORD", "2002"),
+            "password": password or os.getenv("DB_PASSWORD", ""),
             "port": port or os.getenv("DB_PORT", "5432"),
         }
         self.conn = None

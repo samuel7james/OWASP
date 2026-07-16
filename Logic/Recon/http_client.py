@@ -1,25 +1,10 @@
 import os
-import random
 import urllib.parse
+
 import httpx
-
-# Pool of realistic browser user-agents — rotated per request to avoid scanner fingerprinting
-_UA_POOL = [
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_4_1) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4.1 Safari/605.1.15",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0",
-    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36 Edg/122.0.0.0",
-    "Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1",
-]
-
-def _random_ua() -> str:
-    return random.choice(_UA_POOL)
-
-def _default_ua() -> dict:
-    return {"User-Agent": _random_ua()}
+from env_utils import env_bool
+from user_agents import UA_POOL as _UA_POOL
+from user_agents import default_ua_header as _default_ua
 
 UA = {'User-Agent': _UA_POOL[0]}
 HTTP_TIMEOUT = float(os.getenv("SCAN_RECON_TIMEOUT", "30"))
@@ -46,7 +31,6 @@ def probe_target(url, cookie=None, timeout=None):
     Check whether a target responds. Tries http/https and httpx/requests fallbacks.
     Returns {ok, final_url, status_code, error}.
     """
-    import urllib.parse
 
     timeout = float(timeout or HTTP_TIMEOUT)
     connect = min(float(os.getenv("SCAN_PROBE_CONNECT_TIMEOUT", "15")), timeout)
@@ -95,12 +79,6 @@ def probe_target(url, cookie=None, timeout=None):
         "status_code": None,
         "error": last_error,
     }
-
-def env_bool(name, default=False):
-    raw = str(os.getenv(name, "")).strip().lower()
-    if not raw:
-        return default
-    return raw in {"1", "true", "yes", "on", "enable", "enabled"}
 
 class ReconHttpClient:
     """Handles HTTP connections and proxy configuration for reconnaissance."""

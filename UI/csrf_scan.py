@@ -1,6 +1,6 @@
+import argparse
 import os
 import sys
-import argparse
 from datetime import datetime
 
 root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -12,9 +12,9 @@ if root not in sys.path:
     sys.path.append(os.path.join(root, "Data"))
     sys.path.append(os.path.join(root, "UI"))
 
-from vulnerability_scan.Scanner_vulnerability import URLVulnerabilityChecker
 from Recon.framework_detector import detect_framework
-from scan_utils import resolve_scan_url, discover_parameters, warn_if_no_parameters, finalize_findings
+from scan_utils import discover_parameters, finalize_findings, resolve_scan_url, warn_if_no_parameters
+from vulnerability_scan.Scanner_vulnerability import URLVulnerabilityChecker
 
 RESULTS_LOG = os.path.join(root, "Data", "csrf_scan_results", "results.txt")
 
@@ -35,13 +35,13 @@ def _log_results(url, confirmed, candidates=None):
 
 def run_standalone_csrf(url):
     print(f"\n{'='*60}")
-    print(f"      STANDALONE CSRF SCANNER")
+    print("      STANDALONE CSRF SCANNER")
     print(f"{'='*60}")
 
     url, _ = resolve_scan_url(url)
     print(f"[*] Target: {url}")
 
-    print(f"\n[+] Phase 1: Framework Detection...")
+    print("\n[+] Phase 1: Framework Detection...")
     framework_info = detect_framework(url)
     fw_name = framework_info.get('framework', 'unknown')
     fw_conf = framework_info.get('confidence', 'none')
@@ -50,7 +50,7 @@ def run_standalone_csrf(url):
         for ev in framework_info['evidence'][:5]:
             print(f"        - {ev}")
 
-    print(f"\n[+] Phase 2: CSRF Vulnerability Scanning...")
+    print("\n[+] Phase 2: CSRF Vulnerability Scanning...")
     checker = URLVulnerabilityChecker(interactive=False)
     checker.current_target_url = url
 
@@ -60,7 +60,7 @@ def run_standalone_csrf(url):
         print(f"\n{'='*60}\n      SCAN COMPLETE\n{'='*60}")
         return
 
-    print(f"\n[+] Starting CSRF vulnerability checks...")
+    print("\n[+] Starting CSRF vulnerability checks...")
     checker.check_csrf_vulnerabilities(url, targets=targets)
 
     confirmed, candidates = finalize_findings(checker)

@@ -15,6 +15,15 @@ pip install -r requirements.txt
 python main.py
 ```
 
+Or install it as a package and use the console command:
+
+```bash
+pip install -e .
+owasp-inspector
+```
+
+Copy `.env.example` to `.env` to configure optional Postgres reporting, HTTP tuning, and CSRF authenticated-scan credentials — every value is optional and the scanner works with none of it set.
+
 You will see a short menu:
 
 ```

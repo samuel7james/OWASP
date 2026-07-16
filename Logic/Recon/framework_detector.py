@@ -1,7 +1,8 @@
-import os
 import json
-import requests
+import os
 from urllib.parse import urlparse
+
+import requests
 
 # Go up 3 levels from Logic/Recon/framework_detector.py to reach Security Scanner-main
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -27,7 +28,7 @@ class FrameworkDetector:
             print(f"[-] Signatures file not found: {SIGNATURES_FILE}")
             return {}
         try:
-            with open(SIGNATURES_FILE, 'r', encoding='utf-8') as f:
+            with open(SIGNATURES_FILE, encoding='utf-8') as f:
                 data = json.load(f)
                 return data.get('frameworks', {})
         except Exception as e:
@@ -108,7 +109,7 @@ class FrameworkDetector:
             # load existing
             existing = {}
             if os.path.exists(RESULTS_FILE):
-                with open(RESULTS_FILE, 'r', encoding='utf-8') as f:
+                with open(RESULTS_FILE, encoding='utf-8') as f:
                     existing = json.load(f)
             
             domain = urlparse(url).netloc
@@ -124,7 +125,7 @@ class FrameworkDetector:
         if not os.path.exists(RESULTS_FILE):
             return None
         try:
-            with open(RESULTS_FILE, 'r', encoding='utf-8') as f:
+            with open(RESULTS_FILE, encoding='utf-8') as f:
                 existing = json.load(f)
                 domain = urlparse(url).netloc
                 return existing.get(domain)

@@ -1,0 +1,19 @@
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/
+build/
+dist/
+.env
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Scan output artifacts — generated at run time, not source
+Data/sqli_scan_results/
+Data/xss_scan_results/
+Data/csrf_scan_results/
+Logic/Data/

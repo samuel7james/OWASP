@@ -1,0 +1,46 @@
+[project]
+name = "owasp-inspector"
+version = "0.1.0"
+description = "Automated OWASP Top 10 assessment engine (SQLi, XSS, CSRF today; more modules landing per the v1 roadmap)"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "beautifulsoup4",
+    "httpx",
+    "python-dotenv",
+    "psycopg2-binary",
+    "requests",
+    "urllib3",
+    "colorama",
+    "pydantic-settings>=2.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-cov",
+    "ruff",
+]
+# sqlmap integration expects the `sqlmap` binary on PATH; it is not a pip package.
+waf-bypass = ["botasaurus"]
+
+[project.scripts]
+owasp-inspector = "main:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+py-modules = ["main"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
+ignore = ["E501"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

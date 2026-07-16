@@ -1,5 +1,5 @@
-import sys
 import os
+import sys
 
 
 def _configure_utf8_stdio():
@@ -19,7 +19,9 @@ if root not in sys.path:
     sys.path.append(os.path.join(root, "Logic", "vulnerability_scan"))
     sys.path.append(os.path.join(root, "Data"))
 
-import xss_scan, sqli_scan, csrf_scan
+import csrf_scan
+import sqli_scan
+import xss_scan
 
 BANNER = r"""
       ___           _              _   _               _   _

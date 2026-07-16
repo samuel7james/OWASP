@@ -1,6 +1,6 @@
+import argparse
 import os
 import sys
-import argparse
 from datetime import datetime
 
 root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -12,8 +12,8 @@ if root not in sys.path:
     sys.path.append(os.path.join(root, "Logic", "vulnerability_scan"))
     sys.path.append(os.path.join(root, "UI"))
 
+from scan_utils import discover_parameters, finalize_findings, resolve_scan_url, warn_if_no_parameters
 from vulnerability_scan.Scanner_vulnerability import URLVulnerabilityChecker
-from scan_utils import resolve_scan_url, discover_parameters, warn_if_no_parameters, finalize_findings
 
 RESULTS_LOG = os.path.join(root, "Data", "sqli_scan_results", "results.txt")
 
@@ -34,7 +34,7 @@ def _log_results(url, confirmed, candidates=None):
 
 def run_standalone_sqli(url):
     print(f"\n{'='*60}")
-    print(f"      STANDALONE SQLi SCANNER")
+    print("      STANDALONE SQLi SCANNER")
     print(f"{'='*60}")
 
     url, _ = resolve_scan_url(url)
@@ -67,23 +67,23 @@ def run_standalone_sqli(url):
                     f.write(f"COOKIE|{turl}|{qs}|{plist}\n")
     print(f"    [*] Saved discovered targets to {param_file}")
 
-    print(f"\n[+] Starting built-in SQLi checks...")
+    print("\n[+] Starting built-in SQLi checks...")
     sqli_vulns = checker.check_sqli_builtin(url, targets)
     if sqli_vulns:
         print(f"    [!] Built-in checks found {len(sqli_vulns)} potential SQLi!")
     else:
-        print(f"    [-] Built-in checks: No findings.")
+        print("    [-] Built-in checks: No findings.")
 
     native_sqli = any('SQL Injection' in v['type'] and v.get('confidence') == 'high' for v in sqli_vulns)
 
     if not native_sqli:
-        print(f"\n[+] Optional SQLMap pass...")
+        print("\n[+] Optional SQLMap pass...")
         try:
             checker.check_sql_injection_with_sqlmap()
         except Exception as e:
             print(f"    [-] SQLMap skipped/failed: {e}")
     elif native_sqli:
-        print(f"    [*] High-confidence SQLi found — skipping SQLMap.")
+        print("    [*] High-confidence SQLi found — skipping SQLMap.")
 
     confirmed, candidates = finalize_findings(checker)
     print(f"\n[*] Summary: {len(confirmed)} confirmed, {len(candidates)} candidate/suspected")

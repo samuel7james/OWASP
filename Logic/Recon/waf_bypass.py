@@ -14,12 +14,11 @@ Usage:
 """
 
 import os
-import re
 import random
-import time
+import re
 import threading
+import time
 import urllib.parse
-from urllib.parse import urlparse
 
 # ── WAF block-detection signals ──────────────────────────────────────────────
 
@@ -52,8 +51,10 @@ _AntiDetectRequests = None
 _AntiDetectDriver = None
 
 try:
-    from botasaurus.browser import browser as _browser_decorator, Driver as _Driver
-    from botasaurus.request import request as _request_decorator, Request as _Request
+    from botasaurus.browser import Driver as _Driver
+    from botasaurus.browser import browser as _browser_decorator
+    from botasaurus.request import Request as _Request
+    from botasaurus.request import request as _request_decorator
     _HAS_BOTASAURUS = True
     _HAS_BOTASAURUS_REQUESTS = True
 except ImportError:

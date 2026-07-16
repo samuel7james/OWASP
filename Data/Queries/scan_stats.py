@@ -120,7 +120,8 @@ class ScanStats:
 
     def save_to_file(self, path: str):
         """حفظ ملخص الإحصاءات إلى ملف نصي."""
-        import io, sys
+        import io
+        import sys
         old = sys.stdout
         sys.stdout = buf = io.StringIO()
         self.print_summary()

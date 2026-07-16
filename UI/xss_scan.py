@@ -1,6 +1,6 @@
+import argparse
 import os
 import sys
-import argparse
 from datetime import datetime
 
 root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -12,8 +12,8 @@ if root not in sys.path:
     sys.path.append(os.path.join(root, "Data"))
     sys.path.append(os.path.join(root, "UI"))
 
+from scan_utils import discover_parameters, finalize_findings, resolve_scan_url, warn_if_no_parameters
 from vulnerability_scan.Scanner_vulnerability import URLVulnerabilityChecker
-from scan_utils import resolve_scan_url, discover_parameters, warn_if_no_parameters, finalize_findings
 
 RESULTS_LOG = os.path.join(root, "Data", "xss_scan_results", "results.txt")
 
@@ -34,7 +34,7 @@ def _log_results(url, confirmed, candidates=None):
 
 def run_standalone_xss(url):
     print(f"\n{'='*60}")
-    print(f"      STANDALONE XSS SCANNER")
+    print("      STANDALONE XSS SCANNER")
     print(f"{'='*60}")
 
     url, _ = resolve_scan_url(url)
@@ -49,7 +49,7 @@ def run_standalone_xss(url):
         print(f"\n{'='*60}\n      SCAN COMPLETE\n{'='*60}")
         return
 
-    print(f"\n[+] Starting built-in XSS checks...")
+    print("\n[+] Starting built-in XSS checks...")
     checker.check_xss_builtin(url, targets)
     checker.check_xss_advanced_payloads(url, targets)
 
