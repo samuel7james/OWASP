@@ -90,13 +90,18 @@ Deliberate scope note: SQLi/XSS/CSRF modules still call the legacy engines' own 
 - [x] 21 new tests (113 total): risk-score boundaries/saturation, summary text, builder aggregation, JSON schema shape + serializability, and all four renderers — including a PDF-bytes-are-valid-PDF check and the HTML-escaping regression test
 - [x] Verified for real: generated all four formats from a live scan against `example.com` and visually inspected the rendered PDF (professional layout: grade badge, severity table, categorized findings, timeline)
 
-## Phase 7 — CLI Experience
-- [ ] Typer command surface: `owasp-inspector <url>`
-- [ ] Rich progress bars / stage indicators
-- [ ] Colored, helpful error output
-- [ ] Resume interrupted scans
-- [ ] Scan history (local store)
-- [ ] Config profile selection flag
+## Phase 7 — CLI Experience — COMPLETE (pending your review)
+- [x] Typer command surface: `owasp-inspector <url>` is now the flagship command, repointed from the legacy menu (which moved to `owasp-inspector-legacy-menu` — nothing deleted, just renamed access). Matches the master prompt's exact stated syntax literally: no `scan` keyword needed
+- [x] **Real Click/Typer limitation found and fixed**: a Typer/Click `Group` doesn't support a positional argument ahead of subcommand dispatch, so a naive "optional URL on the root callback" approach only accepted options *before* the URL, not after (`owasp-inspector url --yes` failed, `owasp-inspector --yes url` worked) — a real usability bug, not a style nit. Fixed by making `scan` a real subcommand and rewriting `argv` in `main()` (`owasp-inspector <url> [opts]` → `owasp-inspector scan <url> [opts]`) before Typer parses it, restoring normal option ordering. The rewriting logic is a pure, directly-tested function (`rewrite_argv_for_implicit_scan`)
+- [x] Rich-based output: spinner during the scan, a findings-by-severity table, colored pass/fail messaging, a scan-history table
+- [x] Colored, helpful error output: authorization declines, scan failures (both engine errors and unexpected exceptions), and invalid `--profile`/`--format` values all produce a clean colored message and a real exit code, not a stack trace
+- [x] Exit codes carry meaning for CI gating: `0` clean, `1` usage/authorization/scan failure, `2` scan completed but risk grade is D or F
+- [x] Scan history: `owasp-inspector history` — local append-only JSON Lines store (`cli/history.py`), no database required
+- [x] Config profile selection: `--profile fast|thorough|stealth` (built in Phase 3, wired to the CLI for the first time here)
+- [x] **Real bug found and fixed**: the new CLI entry point didn't get the UTF-8 stdio reconfiguration `main.py` already does for the legacy menu, so Rich's box-drawing/em-dash characters came out as mojibake (`�`) on Windows. Fixed by applying the same `_configure_utf8_stdio()` pattern in the new entry point
+- [x] 24 new tests (129 total): argv-rewriting logic, format/profile validation, the `scan` command via `typer.testing.CliRunner` (good-grade exit 0, bad-grade exit 2, authorization-declined exit 1, unknown profile rejected), and the `history` command (populated and empty)
+- [x] Verified for real: ran `owasp-inspector https://example.com` end-to-end (bare URL, options-after-URL, `--yes`, all four `--format` values, `history`, `--version`, `--help`) against a live target
+- [ ] **Deliberately not implemented: true resume-from-checkpoint for interrupted scans.** This engine's scans complete in seconds to minutes — the problem checkpoint/resume exists to solve (protecting hours/days of progress) doesn't apply here, and the current architecture has no incremental discovery/module state to checkpoint. Building that machinery now to check a box would be the "half-finished/speculative feature" the engineering standards for this project warn against. `owasp-inspector history` at least gives visibility into past runs; a real interrupted scan today is simply re-run.
 
 ## Phase 8 — Performance
 - [ ] Replace remaining sync/thread-pool code with asyncio

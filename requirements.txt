@@ -6,6 +6,8 @@ psycopg2-binary
 pydantic-settings
 jinja2
 xhtml2pdf
+typer
+rich
 requests
 urllib3
 

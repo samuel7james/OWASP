@@ -1,30 +1,61 @@
-# Web Vulnerability Scanner (SQLi, XSS, CSRF)
+# OWASP Inspector
 
-A Python command-line tool for testing web applications against three common vulnerability classes:
+An automated OWASP Top 10 assessment engine. Give it one URL; it discovers the target and runs every applicable assessment module automatically, then writes a professional report.
 
-- **SQL injection (SQLi)** — error-based, boolean, and optional SQLMap confirmation
-- **Cross-site scripting (XSS)** — reflected, stored, DOM, CSP bypass, and payload fuzzing
-- **Cross-site request forgery (CSRF)** — token checks, framework-aware tests, and PoC HTML generation
+```
+owasp-inspector https://target.com
+```
+
+No scanner selection, no manual workflow — currently covers:
+
+- **A01 Broken Access Control** — CSRF (token/bypass/SameSite/CORS/CRLF checks) and a heuristic IDOR probe
+- **A03 Injection** — SQLi (error/union/boolean/time-based, optional SQLMap) and XSS (reflected/stored/DOM/CSP-bypass)
+- **A05 Security Misconfiguration** — missing security headers, unverifiable TLS certificates
+- **A06 Vulnerable and Outdated Components** — version-disclosing headers, technology fingerprinting
+- **A10 Server-Side Request Forgery** — heuristic canary probes
+
+Heuristic modules (IDOR, SSRF) and anything not explicitly confirmed are clearly flagged as needing manual verification — see [Limitations](#limitations).
 
 Use it only on systems you own or have explicit permission to test.
 
 ## Quick start
 
 ```bash
-pip install -r requirements.txt
-python main.py
+pip install -e .
+owasp-inspector https://target.com
 ```
 
-Or install it as a package and use the console command:
+You'll be asked to confirm you're authorized to test the target, then the scan runs automatically: discovery (crawl, fingerprinting, TLS/robots/sitemap), every applicable module, then a report. By default it writes an HTML and a JSON report to `Data/reports/`.
 
 ```bash
-pip install -e .
-owasp-inspector
+owasp-inspector https://target.com --format json,markdown,html,pdf --profile stealth -o ./my-reports
+owasp-inspector history                 # list past scans
+owasp-inspector https://target.com -y   # skip the interactive authorization prompt (CI/automation)
 ```
+
+| Option | Purpose |
+|---|---|
+| `--format, -f` | Comma-separated: `json`, `markdown`, `html`, `pdf` (default `html,json`) |
+| `--profile, -p` | `fast`, `thorough` (default), or `stealth` — controls concurrency, timeouts, and per-host request pacing |
+| `--max-pages` | Crawl page limit during discovery (default 40) |
+| `--output-dir, -o` | Where reports are written (default `Data/reports/`) |
+| `--yes, -y` | Skip the interactive authorization prompt (same as `OWASP_INSPECTOR_AUTHORIZED=1`) |
 
 Copy `.env.example` to `.env` to configure optional Postgres reporting, HTTP tuning, and CSRF authenticated-scan credentials — every value is optional and the scanner works with none of it set.
 
-You will see a short menu:
+## Reports
+
+Each scan produces a `ReportData` covering an executive summary, an overall risk grade (A–F, severity-weighted and confidence-discounted so a pile of low-confidence heuristic candidates can't outweigh one confirmed critical), findings grouped by OWASP category with evidence/remediation/references, technology and TLS/header discovery summary, and a scan timeline. Every finding that isn't a `confirmed` result is explicitly marked as needing manual verification.
+
+`owasp-inspector history` lists past scans (target, grade, score, finding count) from a local append-only record — no database required.
+
+## Legacy: single-category menu
+
+The original menu-driven, single-vulnerability-class scanner is still available under a different command, unaffected by the automated engine above:
+
+```bash
+owasp-inspector-legacy-menu
+```
 
 ```
 1) SQLi scan
@@ -33,8 +64,6 @@ You will see a short menu:
 4) Exit
 ```
 
-Each option asks for a target URL, then requires you to confirm you're authorized to test it before the scan runs. For non-interactive/CI use, set `OWASP_INSPECTOR_AUTHORIZED=1` to skip the prompt.
-
 **Use a page with inputs**, not a site homepage. Good test URLs:
 
 ```
@@ -42,37 +71,22 @@ https://demo.testfire.net/search.jsp?query=test
 https://demo.testfire.net/login.jsp
 ```
 
-The scanner probes connectivity, discovers forms/query params, retries with a longer timeout if the first pass finds nothing, then runs the vulnerability checks.
+Each scanner can also be run directly:
 
-## What each scan does
+```bash
+python UI/sqli_scan.py https://example.com/page?id=1
+python UI/xss_scan.py https://example.com/search?q=test
+python UI/csrf_scan.py https://example.com/account
+```
 
-### SQLi scan
-
-1. Crawls the target page for GET/POST parameters and forms.
-2. Runs built-in SQLi checks using payloads from `Data/Payloads/sqli_payloads.json`.
-3. Optionally runs **SQLMap** automatically if built-in checks find nothing (requires `sqlmap` on PATH).
-
-Results are printed to the terminal, appended to `Data/sqli_scan_results/results.txt`, and optionally saved to PostgreSQL if a database is configured.
-
-### XSS scan
-
-1. Discovers injectable parameters the same way as the SQLi scan.
-2. Runs the built-in XSS engine (reflected, stored, DOM, WAF-aware, and advanced payload fuzzing).
-3. Writes a summary to `Data/xss_scan_results/results.txt`.
-
-### CSRF scan
-
-1. Detects the web framework (PHP, Django, Laravel, etc.) using signature files.
-2. Finds forms and state-changing endpoints.
-3. Tests for missing tokens, weak validation, SameSite issues, and common bypasses.
-4. Saves findings to `Data/csrf_scan_results/results.txt` and PoC HTML files under `Data/csrf_scan_results/poc_exploits/`.
+All of these also require the authorization confirmation (or `OWASP_INSPECTOR_AUTHORIZED=1`) before scanning.
 
 ## Optional tools and settings
 
 | Tool / setting | Purpose |
 |----------------|---------|
-| **sqlmap** | Deeper SQLi confirmation when enabled in the SQLi scan |
-| **PostgreSQL** | Stores scan metadata and reports (optional; scans work without it) |
+| **sqlmap** | Deeper SQLi confirmation when enabled in the SQLi module |
+| **PostgreSQL** | Stores scan metadata and reports for the legacy menu (optional; scans work without it) |
 | `SCAN_HTTP_TIMEOUT=30` | HTTP timeout in seconds for slow targets |
 
 Create a `.env` file in the project root to configure the database:
@@ -85,26 +99,15 @@ DB_PASSWORD=your_password
 DB_PORT=5432
 ```
 
-If PostgreSQL is not running, the scanner still works — you will see a brief connection notice and results remain in the terminal and log files.
-
-## Command-line usage
-
-Each scanner can also be run directly:
-
-```bash
-python UI/sqli_scan.py https://example.com/page?id=1
-python UI/xss_scan.py https://example.com/search?q=test
-python UI/csrf_scan.py https://example.com/account
-```
+If PostgreSQL is not running, the legacy menu still works — you will see a brief connection notice and results remain in the terminal and log files. (The automated `owasp-inspector <url>` engine doesn't use Postgres at all — its reports and history are files.)
 
 ## Limitations
 
 - The tool performs active probing. It can generate many HTTP requests against a target.
-- Findings are heuristic. Always verify reported issues manually before reporting them in a bug bounty or audit.
+- Findings are heuristic. Always verify reported issues manually before reporting them in a bug bounty or audit — every non-`confirmed` finding says so explicitly, and the IDOR/SSRF modules in particular are single-signal probes that cannot confirm a real vulnerability on their own (IDOR would need a second authenticated identity; SSRF would need out-of-band callback infrastructure this engine doesn't have).
 - **0 findings usually means the wrong URL, not a broken scanner.** Homepages and marketing sites often have no injectable parameters; production sites are typically hardened.
-- Network firewalls, WAFs, or unreachable hosts will produce empty results — the scanner prints a connectivity warning when the target cannot be reached.
-- Confirmed vs candidate findings: the terminal report shows both; candidates need manual verification (`SCAN_SHOW_CANDIDATES=1` prints all candidates in the DB report).
-- It focuses on SQLi, XSS, and CSRF only.
+- Network firewalls, WAFs, or unreachable hosts will produce empty results.
+- It does not yet cover A02, A04, A07, A08, or A09 — see `TASKS.md` for the roadmap.
 
 ## License and responsibility
 
