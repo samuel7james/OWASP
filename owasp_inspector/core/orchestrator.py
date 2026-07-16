@@ -2,10 +2,14 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import uuid
+from dataclasses import dataclass
+from datetime import datetime, timezone
 
 import owasp_inspector.modules  # noqa: F401  (import side effect: registers built-in modules)
 from owasp_inspector.core.config import get_settings
 from owasp_inspector.core.http import AsyncHttpClient
+from owasp_inspector.core.lifecycle import Scan
 from owasp_inspector.core.logging_config import configure_logging
 from owasp_inspector.core.models import Finding, ScanTarget
 from owasp_inspector.core.module import ScanContext
@@ -17,13 +21,20 @@ from owasp_inspector.discovery.models import DiscoveryResult
 logger = logging.getLogger(__name__)
 
 
+@dataclass
+class ScanResult:
+    scan: Scan
+    discovery: DiscoveryResult
+    findings: list[Finding]
+
+
 async def run_scan(
     url: str,
     *,
     profile: str | None = None,
     max_pages: int = 40,
     registry: ModuleRegistry | None = None,
-) -> tuple[DiscoveryResult, list[Finding]]:
+) -> ScanResult:
     """Run discovery once, then every registered module against that same
     result, concurrently. This is the single entry point Phase 7's CLI calls
     for `owasp-inspector <url>` — one URL in, every applicable OWASP category
@@ -33,25 +44,34 @@ async def run_scan(
     scan_profile = get_profile(profile)
     registry = registry or default_registry
 
-    async with AsyncHttpClient(
-        max_concurrency=scan_profile.max_concurrency,
-        timeout=scan_profile.timeout,
-        max_retries=scan_profile.max_retries,
-        min_request_interval_seconds=scan_profile.min_request_interval_seconds,
-    ) as http:
-        discovery = await run_discovery(http, url, max_pages=max_pages)
-        context = ScanContext(target=ScanTarget(url=url), http=http, settings=get_settings(), discovery=discovery)
+    scan_id = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ-") + uuid.uuid4().hex[:8]
+    scan = Scan(scan_id, url)
+    scan.start()
 
-        modules = registry.instantiate_all()
-        results = await asyncio.gather(*(m.run(context) for m in modules), return_exceptions=True)
+    try:
+        async with AsyncHttpClient(
+            max_concurrency=scan_profile.max_concurrency,
+            timeout=scan_profile.timeout,
+            max_retries=scan_profile.max_retries,
+            min_request_interval_seconds=scan_profile.min_request_interval_seconds,
+        ) as http:
+            discovery = await run_discovery(http, url, max_pages=max_pages)
+            context = ScanContext(target=ScanTarget(url=url), http=http, settings=get_settings(), discovery=discovery)
 
-        findings: list[Finding] = []
-        for module, result in zip(modules, results):
-            if isinstance(result, Exception):
-                # A module's failure (network hiccup, unexpected response shape) must not
-                # sink the rest of the scan — this is what "modules remain independent" means.
-                logger.warning("Module %s failed: %s", module.name, result)
-                continue
-            findings.extend(result)
+            modules = registry.instantiate_all()
+            results = await asyncio.gather(*(m.run(context) for m in modules), return_exceptions=True)
 
-        return discovery, findings
+            findings: list[Finding] = []
+            for module, result in zip(modules, results):
+                if isinstance(result, Exception):
+                    # A module's failure (network hiccup, unexpected response shape) must not
+                    # sink the rest of the scan — this is what "modules remain independent" means.
+                    logger.warning("Module %s failed: %s", module.name, result)
+                    continue
+                findings.extend(result)
+    except Exception as exc:
+        scan.fail(str(exc))
+        raise
+
+    scan.complete()
+    return ScanResult(scan=scan, discovery=discovery, findings=findings)

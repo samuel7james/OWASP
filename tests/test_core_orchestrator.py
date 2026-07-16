@@ -36,11 +36,13 @@ async def test_orchestrator_aggregates_findings_from_all_modules(monkeypatch):
     registry = ModuleRegistry()
     registry.register(_GoodModule)
 
-    discovery, findings = await orchestrator_module.run_scan("https://example.com", registry=registry)
+    result = await orchestrator_module.run_scan("https://example.com", registry=registry)
 
-    assert discovery.ok is True
-    assert len(findings) == 1
-    assert findings[0].module == "good"
+    assert result.discovery.ok is True
+    assert len(result.findings) == 1
+    assert result.findings[0].module == "good"
+    assert result.scan.state.value == "done"
+    assert result.scan.duration_seconds is not None
 
 
 async def test_orchestrator_isolates_a_failing_module(monkeypatch):
@@ -49,9 +51,24 @@ async def test_orchestrator_isolates_a_failing_module(monkeypatch):
     registry.register(_GoodModule)
     registry.register(_BrokenModule)
 
-    discovery, findings = await orchestrator_module.run_scan("https://example.com", registry=registry)
+    result = await orchestrator_module.run_scan("https://example.com", registry=registry)
 
     # The broken module's exception must not prevent the good module's findings
     # from coming back, and must not raise out of run_scan.
-    assert len(findings) == 1
-    assert findings[0].module == "good"
+    assert len(result.findings) == 1
+    assert result.findings[0].module == "good"
+    assert result.scan.state.value == "done"
+
+
+async def test_orchestrator_marks_scan_failed_on_unhandled_exception(monkeypatch):
+    async def _broken_discovery(http, url, max_pages=40):
+        raise RuntimeError("network stack exploded")
+
+    monkeypatch.setattr(orchestrator_module, "run_discovery", _broken_discovery)
+    registry = ModuleRegistry()
+
+    try:
+        await orchestrator_module.run_scan("https://example.com", registry=registry)
+        raise AssertionError("expected RuntimeError to propagate")
+    except RuntimeError:
+        pass

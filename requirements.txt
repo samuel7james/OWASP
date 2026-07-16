@@ -4,6 +4,8 @@ httpx
 python-dotenv
 psycopg2-binary
 pydantic-settings
+jinja2
+xhtml2pdf
 requests
 urllib3
 

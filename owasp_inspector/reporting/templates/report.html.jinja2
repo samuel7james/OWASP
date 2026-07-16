@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>OWASP Inspector Report — {{ report.final_url }}</title>
+<style>
+  /* Deliberately no CSS custom properties, flexbox, or rem units: this
+     template is shared by both the HTML renderer and the PDF renderer
+     (xhtml2pdf/reportlab), which only understands a CSS2.1-ish subset with
+     absolute units. Literal px values keep both output paths identical. */
+  body {
+    margin: 0;
+    padding: 40px 24px;
+    background: #f5f6f8;
+    color: #1c2430;
+    font-family: Helvetica, Arial, sans-serif;
+    line-height: 1.5;
+  }
+  .sheet {
+    max-width: 900px;
+    margin: 0 auto;
+    background: #ffffff;
+    border: 1px solid #e1e4e8;
+    padding: 40px;
+  }
+  h1 { font-size: 26px; margin: 0 0 4px; }
+  h2 { font-size: 18px; margin: 32px 0 12px; padding-bottom: 6px; border-bottom: 2px solid #e1e4e8; }
+  h3 { font-size: 16px; margin: 24px 0 8px; color: #2451a3; }
+  .meta { color: #5b6472; font-size: 14px; margin-bottom: 24px; }
+  .meta span { margin-right: 20px; }
+  table.grade-box { border: 1px solid #e1e4e8; background: #f5f6f8; margin-bottom: 16px; width: 100%; }
+  table.grade-box td { border: none; padding: 16px 24px; vertical-align: middle; }
+  .grade-letter {
+    font-size: 28px; font-weight: bold; width: 48px;
+    text-align: center; color: #ffffff;
+  }
+  .grade-A, .grade-B { background: #2e7d32; }
+  .grade-C { background: #b8860b; }
+  .grade-D { background: #c1440e; }
+  .grade-F { background: #a01818; }
+  table.data { border-collapse: collapse; width: 100%; margin: 8px 0 16px; font-size: 14px; }
+  table.data th, table.data td { text-align: left; padding: 7px 10px; border-bottom: 1px solid #e1e4e8; }
+  table.data th { color: #5b6472; font-weight: bold; }
+  .badge {
+    padding: 2px 9px; font-size: 12px; font-weight: bold;
+    text-transform: uppercase; color: #ffffff;
+  }
+  .sev-critical { background: #7a0d0d; }
+  .sev-high { background: #c1440e; }
+  .sev-medium { background: #b8860b; }
+  .sev-low { background: #2451a3; }
+  .sev-info { background: #6b7280; }
+  .finding {
+    border: 1px solid #e1e4e8;
+    padding: 16px 20px; margin-bottom: 14px; background: #fcfcfd;
+  }
+  .finding-title { font-weight: bold; margin-bottom: 6px; }
+  .finding-meta { font-size: 13px; color: #5b6472; margin: 4px 0; }
+  .manual-flag {
+    margin-left: 8px; font-size: 12px;
+    color: #8a5a00; background: #fff3cd; padding: 1px 8px;
+  }
+  .empty-state { color: #5b6472; font-style: italic; }
+  .timeline-item { font-size: 14px; color: #5b6472; margin-bottom: 5px; }
+  code { background: #eef0f3; padding: 2px 6px; font-size: 13px; }
+</style>
+</head>
+<body>
+<div class="sheet">
+  <h1>OWASP Inspector Report</h1>
+  <div class="meta">
+    <span><strong>Target:</strong> {{ report.final_url }}</span>
+    <span><strong>Scan ID:</strong> {{ report.scan_id }}</span>
+    <span><strong>Generated:</strong> {{ report.generated_at.isoformat() }}</span>
+    {% if report.duration_seconds is not none %}<span><strong>Duration:</strong> {{ "%.1f"|format(report.duration_seconds) }}s</span>{% endif %}
+  </div>
+
+  <h2>Executive Summary</h2>
+  <p>{{ report.executive_summary }}</p>
+
+  <h2>Overall Risk</h2>
+  <table class="grade-box">
+    <tr>
+      <td class="grade-letter grade-{{ report.risk.grade }}">{{ report.risk.grade }}</td>
+      <td>
+        <strong>{{ report.risk.score }}</strong> / 100 risk score<br/>
+        <span class="meta" style="margin:0;">{{ report.risk.confirmed_count }} confirmed &middot; {{ report.risk.manual_verification_count }} need manual verification</span>
+      </td>
+    </tr>
+  </table>
+  <table class="data">
+    <tr><th>Severity</th><th>Count</th></tr>
+    {% for severity, count in report.risk.severity_counts.items() %}
+    {% if count %}<tr><td><span class="badge sev-{{ severity }}">{{ severity }}</span></td><td>{{ count }}</td></tr>{% endif %}
+    {% endfor %}
+  </table>
+
+  <h2>Technology Stack</h2>
+  {% if report.discovery.fingerprint.technology != "unknown" %}
+    <p><strong>Detected:</strong> {{ report.discovery.fingerprint.technology }} (confidence: {{ report.discovery.fingerprint.confidence }})</p>
+  {% else %}
+    <p class="empty-state">No technology fingerprint matched.</p>
+  {% endif %}
+
+  <h2>Discovery Summary</h2>
+  <table class="data">
+    <tr><td>Pages crawled</td><td>{{ report.discovery.crawled_urls|length }}</td></tr>
+    <tr><td>Injectable parameter targets found</td><td>{{ report.discovery.injectable_param_count }}</td></tr>
+    <tr><td>robots.txt fetched</td><td>{{ report.discovery.robots.fetched }}</td></tr>
+    <tr><td>TLS inspected</td><td>{{ report.discovery.tls.inspected }}{% if report.discovery.tls.error %} — {{ report.discovery.tls.error }}{% endif %}</td></tr>
+  </table>
+
+  <h2>Findings</h2>
+  {% if not report.findings %}
+    <p class="empty-state">No findings.</p>
+  {% else %}
+    {% for category, findings in findings_by_category.items() %}
+      <h3>{{ category }}</h3>
+      {% for f in findings %}
+        <div class="finding">
+          <div class="finding-title">
+            <span class="badge sev-{{ f.severity.value }}">{{ f.severity.value }}</span>
+            {{ f.title }}
+            {% if f.manual_verification_recommended %}<span class="manual-flag">manual verification recommended</span>{% endif %}
+          </div>
+          <div class="finding-meta">Confidence: {{ f.confidence.value }} &middot; URL: <code>{{ f.url }}</code>{% if f.parameter %} &middot; Parameter: <code>{{ f.parameter }}</code>{% endif %}</div>
+          {% if f.evidence %}<div class="finding-meta"><strong>Evidence:</strong> {{ f.evidence }}</div>{% endif %}
+          {% if f.remediation %}<div class="finding-meta"><strong>Remediation:</strong> {{ f.remediation }}</div>{% endif %}
+          {% if f.references %}<div class="finding-meta"><strong>References:</strong> {% for ref in f.references %}<a href="{{ ref }}">{{ ref }}</a>{% if not loop.last %}, {% endif %}{% endfor %}</div>{% endif %}
+        </div>
+      {% endfor %}
+    {% endfor %}
+  {% endif %}
+
+  <h2>Scan Timeline</h2>
+  {% for event in report.timeline %}
+    <div class="timeline-item">{{ event.at }} — {{ event.state }}{% if event.detail %} ({{ event.detail }}){% endif %}</div>
+  {% endfor %}
+</div>
+</body>
+</html>

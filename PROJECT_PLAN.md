@@ -103,7 +103,7 @@ See tree above. Existing `Data/Payloads/*` and `Data/Parameters/*` migrate into 
 | Concurrency | `asyncio` + bounded semaphore worker pool | Replaces thread pools; scales to large sites |
 | CLI | `Typer` + `Rich` | Modern, typed, gives progress bars/color for free |
 | Config | `pydantic-settings` + `.env` | Typed, validated config; replaces scattered `os.getenv` |
-| Reporting | Jinja2 templates → HTML/MD/JSON; `WeasyPrint` for PDF from HTML | No headless-browser dependency for PDF |
+| Reporting | Jinja2 templates → HTML/MD/JSON; `xhtml2pdf` for PDF from the same HTML | Revised during Phase 6: WeasyPrint needs a native GTK/Pango runtime with no pip-installable path on Windows — would have made PDF export broken out of the box on this project's own dev platform. `xhtml2pdf` is pure Python (reportlab-based), verified working here. |
 | Packaging | `pyproject.toml` (hatchling or setuptools), console-script entry point | Enables `pip install -e .` / `pipx install` |
 | Testing | `pytest` + `pytest-asyncio` + `respx` (httpx mocking) + `pytest-cov` | Matches async stack |
 | Lint/format | `ruff` (lint) + `ruff format` (replaces black+isort in one tool) | Fast, single dependency |

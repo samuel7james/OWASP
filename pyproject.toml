@@ -13,6 +13,8 @@ dependencies = [
     "urllib3",
     "colorama",
     "pydantic-settings>=2.0",
+    "jinja2>=3.0",
+    "xhtml2pdf>=0.2.11",
 ]
 
 [project.optional-dependencies]

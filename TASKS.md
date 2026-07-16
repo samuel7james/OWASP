@@ -76,14 +76,19 @@ Deliberate scope note: the new async engine is foundational and not yet wired to
 
 Deliberate scope note: SQLi/XSS/CSRF modules still call the legacy engines' own internal `discover_parameters` rather than reading `ScanContext.discovery.targets` — meaning the "each scanner crawls independently" duplication flagged in the Phase 1 audit is not yet eliminated for these three. Unifying that requires validating the legacy engines against the new discovery data shape, which is a real integration task in its own right, not something to force through as a side effect of wrapping. The four net-new modules (misconfiguration, vulnerable-components, IDOR, SSRF) already prove the shared-discovery model works end-to-end; migrating SQLi/XSS/CSRF onto it fully is a good candidate for a focused follow-up.
 
-## Phase 6 — Reporting
-- [ ] Findings/evidence data model
-- [ ] HTML report (Jinja2 template)
-- [ ] Markdown report
-- [ ] JSON report (schema-versioned)
-- [ ] PDF report (WeasyPrint from HTML)
-- [ ] Executive summary + overall risk score algorithm
-- [ ] Scan statistics + timeline section
+## Phase 6 — Reporting — COMPLETE (pending your review)
+- [x] Findings/evidence data model: already existed (Phase 3 `Finding`); this phase adds `reporting/models.py` (`ReportData`, `RiskScore`) that aggregates a completed scan for rendering
+- [x] Wired the Phase 3 `Scan` lifecycle into `core/orchestrator.py` for real (it existed but nothing called it) — `run_scan()` now returns a `ScanResult(scan, discovery, findings)` instead of a bare tuple, giving the report real duration/timeline data instead of nothing
+- [x] `reporting/risk.py`: severity-weighted, confidence-discounted risk score (0-100) + A-F grade — a pile of low-confidence heuristic candidates (IDOR/SSRF) can't outweigh a single confirmed critical finding, by design
+- [x] `reporting/summary.py`: executive summary generator, explicit about "no findings" not being a guarantee of security
+- [x] JSON report: `reporting/serialize.py` — a deliberately explicit, versioned schema (`schema_version: "1.0"`), not a blind `dataclasses.asdict()` dump, so internal-only fields (e.g. the `RobotFileParser` instance living on `RobotsInfo`) never leak into output
+- [x] Markdown report: `reporting/renderers/markdown_renderer.py`, grouped by OWASP category
+- [x] HTML report: Jinja2 template (`templates/report.html.jinja2`), findings grouped/color-coded by severity, risk grade badge, discovery/tech-stack/timeline sections
+- [x] PDF report: **switched from the originally-planned WeasyPrint to `xhtml2pdf`** — verified during this phase that WeasyPrint needs a native GTK/Pango runtime with no pip-installable path on Windows, which would have made PDF export broken out of the box on this project's own dev platform; `xhtml2pdf` is pure Python and confirmed working. Renders from the same HTML template (rewritten without CSS variables/flexbox/`rem` units, since xhtml2pdf's reportlab-based engine only understands a CSS2.1-ish subset with absolute units)
+- [x] Scan statistics + timeline: `report.timeline` from the now-wired `Scan` history; discovery stats (pages crawled, injectable targets, robots/TLS status) surfaced in every format
+- [x] **Real bug caught and fixed during this phase**: the Jinja2 environment used `select_autoescape(["html"])`, which decides based on the *template filename* ending in `.html` — the template is named `report.html.jinja2`, so it never matched and autoescaping was silently never active. Since finding titles/evidence originate from scanned target content, this was a real stored-XSS-into-the-report risk, not just a cosmetic bug. Fixed to unconditional `autoescape=True` (this environment only ever renders the one report template) and added a regression test
+- [x] 21 new tests (113 total): risk-score boundaries/saturation, summary text, builder aggregation, JSON schema shape + serializability, and all four renderers — including a PDF-bytes-are-valid-PDF check and the HTML-escaping regression test
+- [x] Verified for real: generated all four formats from a live scan against `example.com` and visually inspected the rendered PDF (professional layout: grade badge, severity table, categorized findings, timeline)
 
 ## Phase 7 — CLI Experience
 - [ ] Typer command surface: `owasp-inspector <url>`
