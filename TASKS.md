@@ -36,15 +36,18 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done
 - [x] Verified end-to-end: `owasp-inspector` console command runs the existing SQLi/XSS/CSRF menu correctly post-refactor
 - [ ] Dead `UI/*.py` stubs (`FullScan`, `Multi_Scan`, `benchmark_scan`, `idor_scan`, `machine`, `rce_scan`, `xxe_scan`) — only stale bytecode remains, now untracked from git; decision on reviving these as real modules deferred to Phase 5 planning, not needed for Phase 2
 
-## Phase 3 — Core Engine
-- [ ] Async `httpx.AsyncClient`-based request layer
-- [ ] Bounded worker pool / semaphore concurrency
-- [ ] Retry + backoff policy
-- [ ] Per-target rate limiter / request budget (safety rail)
-- [ ] Scan lifecycle state machine (queued/running/paused/done/failed)
-- [ ] Config profiles (e.g. `fast`, `thorough`, `stealth`)
-- [ ] Plugin/module loading via registry + shared `Module` protocol
-- [ ] Authorization gate (`--i-have-authorization` / interactive confirm)
+## Phase 3 — Core Engine — COMPLETE (pending your review)
+- [x] New `owasp_inspector/` package established (`core/`, `safety/`) — this is the real start of the target architecture from PROJECT_PLAN.md §3; `Logic/config.py`, `Logic/exceptions.py`, `Logic/logging_config.py` relocated here since nothing consumed them yet (safe move, verified with full test/import re-run)
+- [x] `core/http.py`: `AsyncHttpClient` — `httpx.AsyncClient`-based, bounded concurrency via semaphore, retry with exponential backoff on network errors and 429/500/502/503/504, UA rotation, transport-injectable for testing (no real network needed in tests)
+- [x] `core/ratelimit.py`: per-host minimum-interval `RateLimiter` — the request-budget safety rail so a multi-module scan can't unintentionally DoS a target
+- [x] `core/lifecycle.py`: `Scan`/`ScanState` state machine (queued→running→{paused,done,failed}) with a validated transition table and timestamped history (feeds Phase 6 timeline reporting and Phase 7 resume)
+- [x] `core/profiles.py`: `fast` / `thorough` (default) / `stealth` profiles controlling concurrency, timeout, retries, and pacing
+- [x] `core/models.py` + `core/module.py` + `core/registry.py`: `Finding`/`Severity`/`Confidence`/`ScanTarget` data model, the `Module` ABC every OWASP category will implement (`run(context) -> list[Finding]`), and a `ModuleRegistry` so new categories register themselves instead of the core importing them by name
+- [x] **Authorization gate** (`owasp_inspector/safety/authorization.py`): real behavior change, not just infrastructure — every existing scan entry point (`UI/sqli_scan.py`, `UI/xss_scan.py`, `UI/csrf_scan.py`, both interactive-menu and direct-URL-argument paths) now requires an explicit "yes" confirmation before scanning, or the `OWASP_INSPECTOR_AUTHORIZED=1` env var for non-interactive/CI use. Verified end-to-end: decline aborts cleanly back to the menu, accept proceeds, env var skips the prompt.
+- [x] 25 new tests added (43 total) covering the HTTP client's retry/backoff/give-up/network-error paths, rate limiter timing, lifecycle transitions (including rejecting invalid ones), profiles, the registry, and every authorization-gate branch
+- [x] Verified: full test suite passes, `ruff` clean of new findings, `owasp-inspector` CLI still runs end-to-end with the gate wired in
+
+Deliberate scope note: the new async engine is foundational and not yet wired to replace the legacy synchronous SQLi/XSS/CSRF scan flow — that happens in Phase 5 when those engines migrate into `owasp_inspector/modules/`. Phase 4 (discovery) is the first consumer.
 
 ## Phase 4 — Discovery Engine
 - [ ] Target validation + URL normalization

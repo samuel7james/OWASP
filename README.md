@@ -33,7 +33,7 @@ You will see a short menu:
 4) Exit
 ```
 
-Each option asks for a target URL only.
+Each option asks for a target URL, then requires you to confirm you're authorized to test it before the scan runs. For non-interactive/CI use, set `OWASP_INSPECTOR_AUTHORIZED=1` to skip the prompt.
 
 **Use a page with inputs**, not a site homepage. Good test URLs:
 

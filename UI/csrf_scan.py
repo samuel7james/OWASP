@@ -13,8 +13,16 @@ if root not in sys.path:
     sys.path.append(os.path.join(root, "UI"))
 
 from Recon.framework_detector import detect_framework
-from scan_utils import discover_parameters, finalize_findings, resolve_scan_url, warn_if_no_parameters
+from scan_utils import (
+    confirm_scan_authorization,
+    discover_parameters,
+    finalize_findings,
+    resolve_scan_url,
+    warn_if_no_parameters,
+)
 from vulnerability_scan.Scanner_vulnerability import URLVulnerabilityChecker
+
+from owasp_inspector.core.exceptions import AuthorizationError
 
 RESULTS_LOG = os.path.join(root, "Data", "csrf_scan_results", "results.txt")
 
@@ -37,6 +45,8 @@ def run_standalone_csrf(url):
     print(f"\n{'='*60}")
     print("      STANDALONE CSRF SCANNER")
     print(f"{'='*60}")
+
+    confirm_scan_authorization(url)
 
     url, _ = resolve_scan_url(url)
     print(f"[*] Target: {url}")
@@ -79,10 +89,14 @@ def main():
 
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1:
-        parser = argparse.ArgumentParser(description="Standalone CSRF Scanner")
-        parser.add_argument("url", help="Target URL to scan")
-        args = parser.parse_args()
-        run_standalone_csrf(args.url)
-    else:
-        main()
+    try:
+        if len(sys.argv) > 1:
+            parser = argparse.ArgumentParser(description="Standalone CSRF Scanner")
+            parser.add_argument("url", help="Target URL to scan")
+            args = parser.parse_args()
+            run_standalone_csrf(args.url)
+        else:
+            main()
+    except AuthorizationError as exc:
+        print(f"[-] {exc}")
+        sys.exit(1)

@@ -16,4 +16,5 @@ htmlcov/
 Data/sqli_scan_results/
 Data/xss_scan_results/
 Data/csrf_scan_results/
+Data/Parameters/
 Logic/Data/

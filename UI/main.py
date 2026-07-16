@@ -23,6 +23,8 @@ import csrf_scan
 import sqli_scan
 import xss_scan
 
+from owasp_inspector.core.exceptions import AuthorizationError
+
 BANNER = r"""
       ___           _              _   _               _   _
      / _ \         | |            | | | |             | | (_)
@@ -54,20 +56,23 @@ def main():
 
             option = input("Enter option (1-4): ").strip()
 
-            if option == "1":
-                print("[*] Running SQLi Scan...")
-                sqli_scan.main()
-            elif option == "2":
-                print("[*] Running XSS Scan...")
-                xss_scan.main()
-            elif option == "3":
-                print("[*] Running CSRF Scan...")
-                csrf_scan.main()
-            elif option == "4":
-                print("Exiting")
-                sys.exit(0)
-            else:
-                print("[-] Invalid option. Choose 1-4.")
+            try:
+                if option == "1":
+                    print("[*] Running SQLi Scan...")
+                    sqli_scan.main()
+                elif option == "2":
+                    print("[*] Running XSS Scan...")
+                    xss_scan.main()
+                elif option == "3":
+                    print("[*] Running CSRF Scan...")
+                    csrf_scan.main()
+                elif option == "4":
+                    print("Exiting")
+                    sys.exit(0)
+                else:
+                    print("[-] Invalid option. Choose 1-4.")
+            except AuthorizationError as exc:
+                print(f"[-] {exc}")
     except KeyboardInterrupt:
         print("\nExiting")
         sys.exit(0)

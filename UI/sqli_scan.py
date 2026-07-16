@@ -12,8 +12,16 @@ if root not in sys.path:
     sys.path.append(os.path.join(root, "Logic", "vulnerability_scan"))
     sys.path.append(os.path.join(root, "UI"))
 
-from scan_utils import discover_parameters, finalize_findings, resolve_scan_url, warn_if_no_parameters
+from scan_utils import (
+    confirm_scan_authorization,
+    discover_parameters,
+    finalize_findings,
+    resolve_scan_url,
+    warn_if_no_parameters,
+)
 from vulnerability_scan.Scanner_vulnerability import URLVulnerabilityChecker
+
+from owasp_inspector.core.exceptions import AuthorizationError
 
 RESULTS_LOG = os.path.join(root, "Data", "sqli_scan_results", "results.txt")
 
@@ -36,6 +44,8 @@ def run_standalone_sqli(url):
     print(f"\n{'='*60}")
     print("      STANDALONE SQLi SCANNER")
     print(f"{'='*60}")
+
+    confirm_scan_authorization(url)
 
     url, _ = resolve_scan_url(url)
     print(f"[*] Target: {url}")
@@ -101,10 +111,14 @@ def main():
 
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1:
-        parser = argparse.ArgumentParser(description="Standalone SQLi Scanner")
-        parser.add_argument("url", help="Target URL to scan")
-        args = parser.parse_args()
-        run_standalone_sqli(args.url)
-    else:
-        main()
+    try:
+        if len(sys.argv) > 1:
+            parser = argparse.ArgumentParser(description="Standalone SQLi Scanner")
+            parser.add_argument("url", help="Target URL to scan")
+            args = parser.parse_args()
+            run_standalone_sqli(args.url)
+        else:
+            main()
+    except AuthorizationError as exc:
+        print(f"[-] {exc}")
+        sys.exit(1)

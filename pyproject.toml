@@ -18,6 +18,7 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "pytest",
+    "pytest-asyncio",
     "pytest-cov",
     "ruff",
 ]
@@ -34,6 +35,9 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools]
 py-modules = ["main"]
 
+[tool.setuptools.packages.find]
+include = ["owasp_inspector*"]
+
 [tool.ruff]
 line-length = 120
 target-version = "py310"
@@ -44,3 +48,4 @@ ignore = ["E501"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+asyncio_mode = "auto"

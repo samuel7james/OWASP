@@ -3,6 +3,17 @@ import os
 
 from Recon.http_client import probe_target
 
+from owasp_inspector.safety.authorization import confirm_authorization
+
+
+def confirm_scan_authorization(url):
+    """Gate every scan entry point on an explicit authorization confirmation.
+
+    Raises owasp_inspector.core.exceptions.AuthorizationError if not confirmed;
+    callers let that propagate and abort the scan rather than catching it.
+    """
+    return confirm_authorization(url)
+
 
 def resolve_scan_url(url, cookie=None):
     """Probe the target and return the reachable URL (after redirects)."""
