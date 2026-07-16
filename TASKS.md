@@ -49,14 +49,16 @@ Legend: `[ ]` not started · `[~]` in progress · `[x]` done
 
 Deliberate scope note: the new async engine is foundational and not yet wired to replace the legacy synchronous SQLi/XSS/CSRF scan flow — that happens in Phase 5 when those engines migrate into `owasp_inspector/modules/`. Phase 4 (discovery) is the first consumer.
 
-## Phase 4 — Discovery Engine
-- [ ] Target validation + URL normalization
-- [ ] Technology fingerprinting (absorb `Logic/Recon/framework_detector.py`)
-- [ ] Single shared crawl (replace per-scanner independent crawling)
-- [ ] Sitemap generation
-- [ ] Endpoint + parameter discovery (absorb `Scanner_vulnerability.discover_parameters`)
-- [ ] robots.txt parsing
-- [ ] Header, cookie, TLS metadata collection
+## Phase 4 — Discovery Engine — COMPLETE (pending your review)
+- [x] `discovery/target.py`: URL normalization + `probe_target` (tries an https upgrade when http:// fails, same behavior the legacy `probe_target` had, rebuilt on the async client)
+- [x] `discovery/fingerprint.py`: technology fingerprinting — **reuses** the existing `Data/Payloads/csrf_payloads/framework_signatures.json` corpus rather than duplicating it (it's just data). Along the way, fixed a real bug in the legacy detector it's replacing: the old code matched header/HTML "patterns" with plain substring `in` checks even though the signature file's patterns are regexes (e.g. `(?i)wsgiserver|gunicorn`) — the new version does real `re.search`, with a substring fallback only if a pattern fails to compile
+- [x] `discovery/crawl.py`: the single shared BFS crawl — same-origin, robots-aware, extracts every GET query-param target and POST form target in one pass. This is what lets Phase 5 retire the "each scanner crawls independently" duplication flagged in the Phase 1 audit
+- [x] `discovery/sitemap.py`: fetches `/sitemap.xml` (or robots.txt `Sitemap:` hints), stdlib `xml.etree` parsing — no `lxml` dependency reintroduced
+- [x] `discovery/robots.py`: fetches and parses `robots.txt` via `urllib.robotparser`, exposes `.allows(url)` that the crawler actually enforces (not just parsed-and-ignored)
+- [x] `discovery/tls.py`: certificate + protocol version inspection. Verify-first, so valid certs return real parsed subject/issuer/expiry; falls back to an unverified handshake for self-signed/expired/lab certs (the common case for this tool's authorized-lab/staging scope) so it still reports the negotiated TLS version and surfaces the trust failure as evidence instead of silently returning nothing — caught and fixed via a real-network smoke test against a valid cert and against badssl.com's self-signed test host
+- [x] `discovery/engine.py`: `run_discovery()` — one entry point aggregating probe + robots + sitemap + fingerprint + TLS + crawl into a single `DiscoveryResult`, running the independent parts concurrently
+- [x] 23 new tests (66 total), all against `httpx.MockTransport` (no real network needed in the suite) plus manual real-network smoke tests against `example.com` and `badssl.com` during development
+- [x] Verified: full suite passes, `ruff` clean, `owasp-inspector` CLI still runs unaffected (discovery is not yet wired into the legacy scan flow — that integration is Phase 5, when SQLi/XSS/CSRF modules start reading from `ScanContext.discovery` instead of crawling independently)
 
 ## Phase 5 — OWASP Assessment Modules
 - [ ] Define `Module` protocol (`run(context) -> list[Finding]`, confidence, evidence, remediation, OWASP reference link)
