@@ -109,7 +109,7 @@ class FrameworkDetector:
             # load existing
             existing = {}
             if os.path.exists(RESULTS_FILE):
-                with open(RESULTS_FILE, encoding='utf-8') as f:
+                with open(RESULTS_FILE, encoding='utf-8-sig') as f:
                     existing = json.load(f)
             
             domain = urlparse(url).netloc
@@ -125,7 +125,7 @@ class FrameworkDetector:
         if not os.path.exists(RESULTS_FILE):
             return None
         try:
-            with open(RESULTS_FILE, encoding='utf-8') as f:
+            with open(RESULTS_FILE, encoding='utf-8-sig') as f:
                 existing = json.load(f)
                 domain = urlparse(url).netloc
                 return existing.get(domain)

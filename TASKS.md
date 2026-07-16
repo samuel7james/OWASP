@@ -60,16 +60,21 @@ Deliberate scope note: the new async engine is foundational and not yet wired to
 - [x] 23 new tests (66 total), all against `httpx.MockTransport` (no real network needed in the suite) plus manual real-network smoke tests against `example.com` and `badssl.com` during development
 - [x] Verified: full suite passes, `ruff` clean, `owasp-inspector` CLI still runs unaffected (discovery is not yet wired into the legacy scan flow — that integration is Phase 5, when SQLi/XSS/CSRF modules start reading from `ScanContext.discovery` instead of crawling independently)
 
-## Phase 5 — OWASP Assessment Modules
-- [ ] Define `Module` protocol (`run(context) -> list[Finding]`, confidence, evidence, remediation, OWASP reference link)
-- [ ] A03 Injection: migrate/fix existing SQLi engine (fix `blind.py` import bug)
-- [ ] A03 Injection: migrate existing XSS engine
-- [ ] CSRF module: migrate existing engine, fix path bug + arg-order bug
-- [ ] A01 Broken Access Control (IDOR) — net-new
-- [ ] A05 Security Misconfiguration (headers, TLS, directory listing) — net-new
-- [ ] A10 SSRF — net-new
-- [ ] A06 Vulnerable/Outdated Components (dependency + CVE lookup) — net-new
-- [ ] Remaining categories (A02, A04, A07, A08, A09) — scoped per-category once above land
+## Phase 5 — OWASP Assessment Modules — COMPLETE (pending your review)
+- [x] `Module` protocol was already defined in Phase 3 (`core/module.py`); this phase is its first real set of implementations, all registered via `@register_module` in `owasp_inspector/modules/`
+- [x] **A03 Injection — SQLi**: `modules/sqli.py` wraps the existing (already bug-fixed, Phase 1/2) built-in SQLi engine. Bridges the legacy synchronous engine via `asyncio.to_thread` rather than a full async rewrite — deliberate: the engine already works and is already tested, a rewrite would add risk for no functional benefit
+- [x] **A03 Injection — XSS**: `modules/xss.py`, same bridging pattern
+- [x] **CSRF**: `modules/csrf.py`, same pattern, categorized under **A01:2021-Broken Access Control** (OWASP 2021 dropped CSRF as its own category; community guidance places it here since it's fundamentally an authorization failure on a state-changing request)
+- [x] **A05 Security Misconfiguration** (net-new): `modules/misconfiguration.py` — reads directly from the Phase 4 discovery result (headers + TLS), zero extra requests. First module to actually demonstrate the discovery-engine payoff. Flags missing HSTS/X-Frame-Options/X-Content-Type-Options/CSP and unverifiable TLS certs
+- [x] **A06 Vulnerable/Outdated Components** (net-new): `modules/vulnerable_components.py` — extracts version strings from `Server`/`X-Powered-By` headers and surfaces the Phase 4 fingerprint as candidates to check against a CVE database (NVD/OSV.dev). Deliberately does **not** call a live CVE API in v1 — no reliable product/version-to-CVE mapping from header strings alone yet — every finding here is INFO-severity and manual-verification-flagged, not a confirmed vulnerability claim
+- [x] **A01 Broken Access Control — IDOR heuristic** (net-new): `modules/idor.py` — tampers numeric ID-like query params found by the crawl and flags a different-but-successful response. Explicitly cannot confirm real IDOR (needs two distinct authenticated identities this engine doesn't have) — every finding is low-confidence and manual-verification-flagged, never a confirmed claim
+- [x] **A10 SSRF heuristic** (net-new): `modules/ssrf.py` — safe, non-destructive canary probes (unroutable loopback, cloud metadata endpoint) into URL-suggestive parameter names, flags only on cloud-metadata-like response content. Cannot confirm real SSRF without out-of-band infrastructure this engine doesn't have — same manual-verification-flagged discipline
+- [x] `core/orchestrator.py`: `run_scan(url)` — the first real "one URL in, every applicable category assessed automatically" pipeline: runs discovery once, then every registered module concurrently, isolating any single module's failure so it can't sink the rest of the scan
+- [x] 26 new tests (92 total): pure-logic tests for the Finding-conversion helper and the two discovery-only modules, `httpx.MockTransport`-backed tests for IDOR/SSRF, monkeypatched-bridge tests for SQLi/XSS/CSRF, and orchestrator tests proving module isolation
+- [x] Verified for real: ran the full new-module pipeline against `example.com` (correctly flagged its genuinely-missing security headers, no false positives on vulnerable-components/IDOR/SSRF since there's nothing there to flag) and the CSRF-wrapped legacy engine against the README's own recommended test target — surfaced and fixed one more latent bug in the process: `Logic/Recon/framework_detector.py` read its own cached JSON with plain `utf-8`, which threw on the BOM the file actually had, silently breaking the framework-detection cache on every run
+- [ ] Remaining categories (A02 Cryptographic Failures, A04 Insecure Design, A07 Auth Failures, A08 Software/Data Integrity, A09 Logging/Monitoring Failures) — intentionally deferred; each needs its own scoping pass rather than being rushed in alongside these seven, consistent with "one phase at a time, don't half-finish"
+
+Deliberate scope note: SQLi/XSS/CSRF modules still call the legacy engines' own internal `discover_parameters` rather than reading `ScanContext.discovery.targets` — meaning the "each scanner crawls independently" duplication flagged in the Phase 1 audit is not yet eliminated for these three. Unifying that requires validating the legacy engines against the new discovery data shape, which is a real integration task in its own right, not something to force through as a side effect of wrapping. The four net-new modules (misconfiguration, vulnerable-components, IDOR, SSRF) already prove the shared-discovery model works end-to-end; migrating SQLi/XSS/CSRF onto it fully is a good candidate for a focused follow-up.
 
 ## Phase 6 — Reporting
 - [ ] Findings/evidence data model

@@ -5,3 +5,10 @@
 
 --- 2026-06-27T03:30:23 | https://demo.testfire.net/login.jsp | 0 confirmed, 1 candidate(s) ---
   [suspected/medium] CSRF (Express.js missing token) param=_csrf
+
+--- CSRF findings ---
+{'type': 'CSRF (No Defenses)', 'parameter': 'none', 'payload': 'direct_form_submission', 'evidence': 'Form at https://demo.testfire.net/sendFeedback has no CSRF token and accepts cross-origin submissions.', 'tool': 'native_csrf', 'confidence': 'high', 'lab': 'CSRF vulnerability with no defenses', 'form_url': 'https://demo.testfire.net/sendFeedback', 'form_data': {'cfile': 'comments.txt', 'name': 'scanner', 'email_addr': 'scan@example.com', 'subject': 'security-test', 'comments': 'security test message', 'submit': ' Submit ', 'reset': ' Clear Form '}, 'poc_file': 'D:\\OWASP\\Data\\csrf_scan_results\\poc_exploits\\csrf_poc_1_CSRF_No_Defenses.html'}
+{'type': 'CSRF (Express.js missing token)', 'parameter': '_csrf', 'payload': 'N/A', 'evidence': 'Express.js application found, but forms are missing _csrf token. csurf middleware might be missing.', 'tool': 'framework_csrf', 'confidence': 'medium'}
+
+--- CSRF findings ---
+{'type': 'CSRF (Express.js missing token)', 'parameter': '_csrf', 'payload': 'N/A', 'evidence': 'Express.js application found, but forms are missing _csrf token. csurf middleware might be missing.', 'tool': 'framework_csrf', 'confidence': 'medium'}
