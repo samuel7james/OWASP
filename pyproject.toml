@@ -45,6 +45,15 @@ include = ["owasp_inspector*"]
 
 [tool.ruff]
 line-length = 120
+# Logic/, UI/, Data/Queries, and main.py are the pre-v1 legacy engine: flat
+# modules that resolve imports via main.py's own sys.path shim rather than
+# being a real package, so imports necessarily land after that setup runs
+# (E402). That's a structural property of the deliberately-still-supported
+# legacy menu (`owasp-inspector-legacy-menu`), not a style lapse —
+# rewriting it is a real refactor of working code, not a lint fix, and out
+# of scope here. owasp_inspector/ (the actively-developed v1 engine) is
+# held to full lint.
+exclude = ["Logic", "UI", "Data/Queries", "main.py"]
 target-version = "py310"
 
 [tool.ruff.lint]

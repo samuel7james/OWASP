@@ -90,7 +90,9 @@ def test_scan_command_requires_authorization(monkeypatch, tmp_path):
 
 
 def test_scan_command_rejects_unknown_profile(tmp_path):
-    result = runner.invoke(cli_app.app, ["scan", "https://example.com", "--profile", "nonexistent", "--output-dir", str(tmp_path)])
+    result = runner.invoke(
+        cli_app.app, ["scan", "https://example.com", "--profile", "nonexistent", "--output-dir", str(tmp_path)]
+    )
     assert result.exit_code != 0
 
 

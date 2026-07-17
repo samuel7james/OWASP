@@ -19,7 +19,9 @@ def _handler(request):
     if path == "/sitemap.xml":
         return httpx.Response(404)
     if path in ("/", "/search"):
-        return httpx.Response(200, headers={"content-type": "text/html"}, text=HOME_PAGE if path == "/" else "<html></html>")
+        return httpx.Response(
+            200, headers={"content-type": "text/html"}, text=HOME_PAGE if path == "/" else "<html></html>"
+        )
     return httpx.Response(404)
 
 

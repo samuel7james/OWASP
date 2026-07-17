@@ -77,7 +77,11 @@ class SoftwareIntegrityModule(Module):
                 if resource_url.endswith(".js") and absolute_url not in checked_map_urls:
                     checked_map_urls.add(absolute_url)
                     map_response = await context.http.get(absolute_url + ".map")
-                    if map_response is not None and map_response.status_code == 200 and "sourcesContent" in (map_response.text or ""):
+                    if (
+                        map_response is not None
+                        and map_response.status_code == 200
+                        and "sourcesContent" in (map_response.text or "")
+                    ):
                         findings.append(
                             Finding(
                                 module=self.name,

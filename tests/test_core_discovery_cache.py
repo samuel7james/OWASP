@@ -4,8 +4,12 @@ from owasp_inspector.discovery.models import CookieFlags, DiscoveryResult, Finge
 
 def _discovery(url="https://example.com/"):
     return DiscoveryResult(
-        target_url=url, final_url=url, ok=True, status_code=200,
-        headers={"server": "nginx"}, cookies={"a": "b"},
+        target_url=url,
+        final_url=url,
+        ok=True,
+        status_code=200,
+        headers={"server": "nginx"},
+        cookies={"a": "b"},
         fingerprint=Fingerprint(technology="django", confidence="high", evidence=["x"]),
         tls=TlsInfo(inspected=True, version="TLSv1.3", subject="commonName=example.com"),
         sitemap_urls=["https://example.com/sitemap.xml"],

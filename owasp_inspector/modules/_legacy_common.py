@@ -25,7 +25,9 @@ def convert_legacy_finding(raw: dict, *, module: str, owasp_category: str, targe
     status = raw.get("status", "candidate")
     confidence_raw = raw.get("confidence", "medium")
 
-    confidence = Confidence.CONFIRMED if status == "confirmed" else _CONFIDENCE_BY_RAW.get(confidence_raw, Confidence.LOW)
+    confidence = (
+        Confidence.CONFIRMED if status == "confirmed" else _CONFIDENCE_BY_RAW.get(confidence_raw, Confidence.LOW)
+    )
     severity = _SEVERITY_BY_CONFIDENCE.get(confidence_raw, Severity.MEDIUM)
 
     return Finding(

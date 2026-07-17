@@ -6,11 +6,28 @@ from owasp_inspector.core.http import AsyncHttpClient
 from owasp_inspector.modules.csrf.patterns import CSRF_ERROR_RE, NON_STATE_CHANGING_PATHS, SUCCESS_RE
 
 DEFAULT_TOKEN_NAMES = {
-    "csrf", "csrf_token", "csrftoken", "_csrf", "xsrf", "_xsrf",
-    "xsrf_token", "xsrf-token", "_token", "authenticity_token",
-    "__requestverificationtoken", "csrfmiddlewaretoken", "_csrf_token",
-    "token", "anti_forgery_token", "form_token", "form_key", "nonce",
-    "_wpnonce", "wp_nonce", "ic-csrf-token", "csrf-token",
+    "csrf",
+    "csrf_token",
+    "csrftoken",
+    "_csrf",
+    "xsrf",
+    "_xsrf",
+    "xsrf_token",
+    "xsrf-token",
+    "_token",
+    "authenticity_token",
+    "__requestverificationtoken",
+    "csrfmiddlewaretoken",
+    "_csrf_token",
+    "token",
+    "anti_forgery_token",
+    "form_token",
+    "form_key",
+    "nonce",
+    "_wpnonce",
+    "wp_nonce",
+    "ic-csrf-token",
+    "csrf-token",
 }
 
 

@@ -38,10 +38,7 @@ async def test_crawl_discovers_get_and_post_targets():
     post_targets = [t for t in targets if t.method == "post"]
 
     assert any(t.url == "https://example.com/search" and t.params == ["q"] for t in get_targets)
-    assert any(
-        t.url == "https://example.com/login" and set(t.params) == {"username", "password"}
-        for t in post_targets
-    )
+    assert any(t.url == "https://example.com/login" and set(t.params) == {"username", "password"} for t in post_targets)
 
 
 async def test_crawl_captures_default_values_for_get_and_form_targets():

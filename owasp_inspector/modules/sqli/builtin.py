@@ -13,22 +13,63 @@ from owasp_inspector.modules.sqli.payloads import SqliPayload
 # query inputs — excluded from the cookie-based injection surface, same
 # denylist as the legacy engine (ported verbatim).
 _COOKIE_DENYLIST = (
-    "sessid", "sessionid", "phpsessid", "jsessionid", "aspsession", "asp.net",
-    "csrf", "xsrf", "_token", "laravel_session", "remember_",
-    "device_", "uuid", "ts0",
-    "cf_", "__cf", "ak_bmsc", "incap_", "visid", "bm_",
-    "_ga", "_gid", "_gcl", "gtm", "fbp", "fbclid", "amplitude", "mp_",
-    "default_language", "locale", "timezone", "consent",
+    "sessid",
+    "sessionid",
+    "phpsessid",
+    "jsessionid",
+    "aspsession",
+    "asp.net",
+    "csrf",
+    "xsrf",
+    "_token",
+    "laravel_session",
+    "remember_",
+    "device_",
+    "uuid",
+    "ts0",
+    "cf_",
+    "__cf",
+    "ak_bmsc",
+    "incap_",
+    "visid",
+    "bm_",
+    "_ga",
+    "_gid",
+    "_gcl",
+    "gtm",
+    "fbp",
+    "fbclid",
+    "amplitude",
+    "mp_",
+    "default_language",
+    "locale",
+    "timezone",
+    "consent",
 )
 
 _AUTH_SUCCESS_PATHS = ("/my-account", "/account", "/dashboard", "/profile")
 _AUTH_SUCCESS_BODY_INDICATORS = (
-    "logout", "log out", "sign out", "logged in as",
-    "your username is", "change email", "update email", "my account",
+    "logout",
+    "log out",
+    "sign out",
+    "logged in as",
+    "your username is",
+    "change email",
+    "update email",
+    "my account",
 )
 _SIZE_DIFF_EXCLUDED_TYPES = (
-    "time", "union", "auth bypass", "order by", "version",
-    "extractvalue", "complex", "mssql", "mysql", "oracle", "postgresql",
+    "time",
+    "union",
+    "auth bypass",
+    "order by",
+    "version",
+    "extractvalue",
+    "complex",
+    "mssql",
+    "mysql",
+    "oracle",
+    "postgresql",
 )
 
 
@@ -175,12 +216,22 @@ class BuiltinSqliScanner:
 
                     for p_val in variants:
                         test_data = {**defaults, param: p_val}
-                        tasks.append({
-                            "method": method, "turl": turl, "param": param, "p": p, "test_data": test_data,
-                            "baseline_url": baseline_url, "base_len": base_len, "base_time": base_time,
-                            "baseline_text": baseline_text, "base_status": base_status,
-                            "defaults": defaults, "page_url": page_url,
-                        })
+                        tasks.append(
+                            {
+                                "method": method,
+                                "turl": turl,
+                                "param": param,
+                                "p": p,
+                                "test_data": test_data,
+                                "baseline_url": baseline_url,
+                                "base_len": base_len,
+                                "base_time": base_time,
+                                "baseline_text": baseline_text,
+                                "base_status": base_status,
+                                "defaults": defaults,
+                                "page_url": page_url,
+                            }
+                        )
         return tasks
 
     # ── worker ───────────────────────────────────────────────────────
@@ -227,31 +278,57 @@ class BuiltinSqliScanner:
                 # pattern to be absent from baseline_text, exactly like the
                 # reflection check below already does.
                 if re.search(pattern, r.text, re.I) and not re.search(pattern, baseline_text or "", re.I):
-                    return {"res_type": "confirmed", "vuln": self.ctx.make_vuln_dict(
-                        f"{ptype} - Error Pattern Match", param, payload,
-                        f"Found SQL error pattern: {pattern}", turl, method,
-                    )}
+                    return {
+                        "res_type": "confirmed",
+                        "vuln": self.ctx.make_vuln_dict(
+                            f"{ptype} - Error Pattern Match",
+                            param,
+                            payload,
+                            f"Found SQL error pattern: {pattern}",
+                            turl,
+                            method,
+                        ),
+                    }
 
             reflection = p.reflection
             if reflection and reflection in r.text and reflection not in (baseline_text or ""):
                 clean_text = self.ctx.strip_payload_echoes(r.text, payload, reflection)
                 if reflection in clean_text:
                     if await self.ctx.reflection_control_matches(
-                        method, turl, param, defaults, reflection, timeout=req_timeout, payload=payload,
+                        method,
+                        turl,
+                        param,
+                        defaults,
+                        reflection,
+                        timeout=req_timeout,
+                        payload=payload,
                     ):
-                        return {"res_type": "candidate", "candidate": {
-                            **self.ctx.make_vuln_dict(
-                                ptype, param, payload,
-                                f"Reflection marker '{reflection}' also appears with benign control input",
-                                turl, method, "low",
-                            ),
-                            "status": "candidate",
-                        }}
-                    return {"res_type": "confirmed", "vuln": self.ctx.make_vuln_dict(
-                        ptype, param, payload,
-                        f"Target string '{reflection}' successfully reflected in response via UNION",
-                        turl, method,
-                    )}
+                        return {
+                            "res_type": "candidate",
+                            "candidate": {
+                                **self.ctx.make_vuln_dict(
+                                    ptype,
+                                    param,
+                                    payload,
+                                    f"Reflection marker '{reflection}' also appears with benign control input",
+                                    turl,
+                                    method,
+                                    "low",
+                                ),
+                                "status": "candidate",
+                            },
+                        }
+                    return {
+                        "res_type": "confirmed",
+                        "vuln": self.ctx.make_vuln_dict(
+                            ptype,
+                            param,
+                            payload,
+                            f"Target string '{reflection}' successfully reflected in response via UNION",
+                            turl,
+                            method,
+                        ),
+                    }
 
             if "version" in ptype.lower() or "@@version" in payload.lower() or "version()" in payload.lower():
                 ver_vuln = self._check_version_extraction(r, payload, param, ptype, turl, method, baseline_text)
@@ -260,45 +337,93 @@ class BuiltinSqliScanner:
 
             if ptype == "UNION column count probing":
                 return {
-                    "res_type": "column_collect", "param": param, "columns": p.columns,
-                    "status": r.status_code, "errored": self.ctx.detect_sql_errors(r.text),
-                    "payload": payload, "method": method, "turl": turl, "size": res_size, "r": r,
+                    "res_type": "column_collect",
+                    "param": param,
+                    "columns": p.columns,
+                    "status": r.status_code,
+                    "errored": self.ctx.detect_sql_errors(r.text),
+                    "payload": payload,
+                    "method": method,
+                    "turl": turl,
+                    "size": res_size,
+                    "r": r,
                 }
 
             time_vuln = await self._check_time_based(
-                is_time_based, elapsed, base_time, req_timeout, method, turl, test_data, defaults,
-                param, ptype, payload, page_url,
+                is_time_based,
+                elapsed,
+                base_time,
+                req_timeout,
+                method,
+                turl,
+                test_data,
+                defaults,
+                param,
+                ptype,
+                payload,
+                page_url,
             )
             if time_vuln:
                 return time_vuln
 
             if is_auth_bypass:
                 auth_vuln = await self._check_auth_bypass(
-                    r, baseline_text, baseline_url, method, param, ptype, payload, turl, defaults, page_url,
+                    r,
+                    baseline_text,
+                    baseline_url,
+                    method,
+                    param,
+                    ptype,
+                    payload,
+                    turl,
+                    defaults,
+                    page_url,
                 )
                 if auth_vuln:
                     return auth_vuln
 
             if baseline_url and method != "cookie" and is_auth_bypass:
-                redir_vuln = self._check_redirect_auth(r, baseline_text, baseline_url, param, ptype, payload, turl, method)
+                redir_vuln = self._check_redirect_auth(
+                    r, baseline_text, baseline_url, param, ptype, payload, turl, method
+                )
                 if redir_vuln:
                     return redir_vuln
 
             if r.status_code >= 500 and base_status == 200 and "error-based" in ptype.lower():
-                return {"res_type": "confirmed", "vuln": self.ctx.make_vuln_dict(
-                    ptype, param, payload, f"Payload triggered HTTP 500 error (Baseline was {base_status})",
-                    turl, method, "high",
-                )}
+                return {
+                    "res_type": "confirmed",
+                    "vuln": self.ctx.make_vuln_dict(
+                        ptype,
+                        param,
+                        payload,
+                        f"Payload triggered HTTP 500 error (Baseline was {base_status})",
+                        turl,
+                        method,
+                        "high",
+                    ),
+                }
 
             if p.group:
                 return {
-                    "res_type": "boolean_collect", "param": param, "group": p.group, "expected": p.expected,
-                    "size": res_size, "r": r, "ptype": ptype,
+                    "res_type": "boolean_collect",
+                    "param": param,
+                    "group": p.group,
+                    "expected": p.expected,
+                    "size": res_size,
+                    "r": r,
+                    "ptype": ptype,
                 }
 
             return {
-                "res_type": "size_collect", "param": param, "ptype": ptype, "size": res_size,
-                "base_len": base_len, "payload": payload, "turl": turl, "method": method, "r": r,
+                "res_type": "size_collect",
+                "param": param,
+                "ptype": ptype,
+                "size": res_size,
+                "base_len": base_len,
+                "payload": payload,
+                "turl": turl,
+                "method": method,
+                "r": r,
             }
         except Exception:
             return None
@@ -316,12 +441,33 @@ class BuiltinSqliScanner:
             if any(ext in ctx for ext in [".js", ".css", ".png", "jquery", "scripts/"]):
                 return None
             ver_str = ctx_match.group(1).strip()
-        return {"res_type": "confirmed", "vuln": self.ctx.make_vuln_dict(
-            ptype, param, payload, f"Extracted version info: {ver_str}", turl, method,
-        )}
+        return {
+            "res_type": "confirmed",
+            "vuln": self.ctx.make_vuln_dict(
+                ptype,
+                param,
+                payload,
+                f"Extracted version info: {ver_str}",
+                turl,
+                method,
+            ),
+        }
 
-    async def _check_time_based(self, is_time_based, elapsed, base_time, req_timeout,
-                                 method, turl, test_data, defaults, param, ptype, payload, page_url):
+    async def _check_time_based(
+        self,
+        is_time_based,
+        elapsed,
+        base_time,
+        req_timeout,
+        method,
+        turl,
+        test_data,
+        defaults,
+        param,
+        ptype,
+        payload,
+        page_url,
+    ):
         if not is_time_based:
             return None
         threshold = max(base_time * 2, base_time + 5.0)
@@ -350,10 +496,14 @@ class BuiltinSqliScanner:
         if elapsed_ctrl > threshold * 0.5:
             return None
 
-        evidence = f"Time delay {elapsed:.1f}s + {elapsed2:.1f}s vs control {elapsed_ctrl:.1f}s (baseline {base_time:.1f}s)"
+        evidence = (
+            f"Time delay {elapsed:.1f}s + {elapsed2:.1f}s vs control {elapsed_ctrl:.1f}s (baseline {base_time:.1f}s)"
+        )
         return {"res_type": "confirmed", "vuln": self.ctx.make_vuln_dict(ptype, param, payload, evidence, turl, method)}
 
-    async def _check_auth_bypass(self, r, baseline_text, baseline_url, method, param, ptype, payload, turl, defaults, page_url):
+    async def _check_auth_bypass(
+        self, r, baseline_text, baseline_url, method, param, ptype, payload, turl, defaults, page_url
+    ):
         success, evidence = _auth_success_signal(r, baseline_text, baseline_url)
         if not success:
             return None
@@ -367,16 +517,32 @@ class BuiltinSqliScanner:
         if control_success:
             return None
 
-        return {"res_type": "confirmed", "vuln": self.ctx.make_vuln_dict(
-            f"Auth Bypass - {ptype}", param, payload, f"Auth success confirmed: {evidence}", turl, method,
-        )}
+        return {
+            "res_type": "confirmed",
+            "vuln": self.ctx.make_vuln_dict(
+                f"Auth Bypass - {ptype}",
+                param,
+                payload,
+                f"Auth success confirmed: {evidence}",
+                turl,
+                method,
+            ),
+        }
 
     def _check_redirect_auth(self, r, baseline_text, baseline_url, param, ptype, payload, turl, method):
         success, evidence = _auth_success_signal(r, baseline_text, baseline_url)
         if success:
-            return {"res_type": "confirmed", "vuln": self.ctx.make_vuln_dict(
-                f"Auth Bypass - {ptype}", param, payload, f"URL/body auth success after redirect: {evidence}", turl, method,
-            )}
+            return {
+                "res_type": "confirmed",
+                "vuln": self.ctx.make_vuln_dict(
+                    f"Auth Bypass - {ptype}",
+                    param,
+                    payload,
+                    f"URL/body auth success after redirect: {evidence}",
+                    turl,
+                    method,
+                ),
+            }
         return None
 
     # ── post-processing ──────────────────────────────────────────────
@@ -402,19 +568,33 @@ class BuiltinSqliScanner:
                 continue
 
             if diff > 1500 and diff > base_len * 0.20:
-                vulns.append({
-                    "type": f"SQL Injection ({res['ptype']})", "parameter": res["param"], "payload": res["payload"],
-                    "evidence": f"Massive response size diff: {diff} bytes ({base_len}->{size})",
-                    "tool": "builtin_sqli", "confidence": "high", "status": "confirmed",
-                    "url": res["turl"], "method": res["method"],
-                })
+                vulns.append(
+                    {
+                        "type": f"SQL Injection ({res['ptype']})",
+                        "parameter": res["param"],
+                        "payload": res["payload"],
+                        "evidence": f"Massive response size diff: {diff} bytes ({base_len}->{size})",
+                        "tool": "builtin_sqli",
+                        "confidence": "high",
+                        "status": "confirmed",
+                        "url": res["turl"],
+                        "method": res["method"],
+                    }
+                )
             else:
-                candidates.append({
-                    "type": f"SQL Injection ({res['ptype']})", "parameter": res["param"], "payload": res["payload"],
-                    "evidence": f"Response size diff: {diff} bytes ({base_len}->{size})",
-                    "tool": "builtin_sqli", "confidence": "low", "status": "candidate",
-                    "url": res["turl"], "method": res["method"],
-                })
+                candidates.append(
+                    {
+                        "type": f"SQL Injection ({res['ptype']})",
+                        "parameter": res["param"],
+                        "payload": res["payload"],
+                        "evidence": f"Response size diff: {diff} bytes ({base_len}->{size})",
+                        "tool": "builtin_sqli",
+                        "confidence": "low",
+                        "status": "candidate",
+                        "url": res["turl"],
+                        "method": res["method"],
+                    }
+                )
 
     @staticmethod
     def _evaluate_boolean_toggles(results_map, vulns, candidates):
@@ -428,21 +608,33 @@ class BuiltinSqliScanner:
                 continue
 
             if diff > 5000:
-                vulns.append({
-                    "type": f"SQL Injection ({true_res['ptype']})", "parameter": param,
-                    "payload": f"{data['true']['group']} (T/F toggled)",
-                    "evidence": f"High-confidence Boolean TRUE/FALSE size difference: {diff} bytes",
-                    "tool": "builtin_sqli", "confidence": "high", "status": "confirmed",
-                    "url": str(true_res["r"].url), "method": "mixed",
-                })
+                vulns.append(
+                    {
+                        "type": f"SQL Injection ({true_res['ptype']})",
+                        "parameter": param,
+                        "payload": f"{data['true']['group']} (T/F toggled)",
+                        "evidence": f"High-confidence Boolean TRUE/FALSE size difference: {diff} bytes",
+                        "tool": "builtin_sqli",
+                        "confidence": "high",
+                        "status": "confirmed",
+                        "url": str(true_res["r"].url),
+                        "method": "mixed",
+                    }
+                )
             else:
-                candidates.append({
-                    "type": f"SQL Injection ({true_res['ptype']})", "parameter": param,
-                    "payload": f"{data['true']['group']} (T/F toggled)",
-                    "evidence": f"Boolean TRUE/FALSE size difference: {diff} bytes (>{true_res['size']*0.15:.0f}b threshold)",
-                    "tool": "builtin_sqli", "confidence": "medium", "status": "suspected",
-                    "url": str(true_res["r"].url), "method": "mixed",
-                })
+                candidates.append(
+                    {
+                        "type": f"SQL Injection ({true_res['ptype']})",
+                        "parameter": param,
+                        "payload": f"{data['true']['group']} (T/F toggled)",
+                        "evidence": f"Boolean TRUE/FALSE size difference: {diff} bytes (>{true_res['size'] * 0.15:.0f}b threshold)",
+                        "tool": "builtin_sqli",
+                        "confidence": "medium",
+                        "status": "suspected",
+                        "url": str(true_res["r"].url),
+                        "method": "mixed",
+                    }
+                )
 
     @staticmethod
     def _evaluate_column_counts(column_map, vulns):
@@ -455,16 +647,25 @@ class BuiltinSqliScanner:
                 continue
             for s in successes:
                 if any(
-                    v.get("type") == "SQL Injection (UNION Column Count)" and v.get("parameter") == param
-                    and v.get("payload") == s["payload"] for v in vulns
+                    v.get("type") == "SQL Injection (UNION Column Count)"
+                    and v.get("parameter") == param
+                    and v.get("payload") == s["payload"]
+                    for v in vulns
                 ):
                     continue
-                vulns.append({
-                    "type": "SQL Injection (UNION Column Count)", "parameter": param, "payload": s["payload"],
-                    "evidence": f"Correct column count found: {s['columns']} columns (Confirmed via transition from error)",
-                    "tool": "builtin_sqli", "confidence": "high", "status": "confirmed",
-                    "url": s["turl"], "method": s["method"],
-                })
+                vulns.append(
+                    {
+                        "type": "SQL Injection (UNION Column Count)",
+                        "parameter": param,
+                        "payload": s["payload"],
+                        "evidence": f"Correct column count found: {s['columns']} columns (Confirmed via transition from error)",
+                        "tool": "builtin_sqli",
+                        "confidence": "high",
+                        "status": "confirmed",
+                        "url": s["turl"],
+                        "method": s["method"],
+                    }
+                )
 
     @staticmethod
     def _filter_common_auth_fps(vulns, auth_indicator_counts, total_tasks):
@@ -474,6 +675,7 @@ class BuiltinSqliScanner:
         if not bad:
             return
         vulns[:] = [
-            v for v in vulns
+            v
+            for v in vulns
             if not ("Auth Bypass" in v["type"] and any(ind.lower() in v.get("evidence", "").lower() for ind in bad))
         ]

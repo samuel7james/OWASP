@@ -92,8 +92,15 @@ class SqliContext:
         return urllib.parse.urlunparse(parsed._replace(query=urllib.parse.urlencode(query, doseq=True)))
 
     async def reflection_control_matches(
-        self, method: str, turl: str, param: str, defaults: dict, reflection: str, *,
-        timeout: float = 10.0, payload: str | None = None,
+        self,
+        method: str,
+        turl: str,
+        param: str,
+        defaults: dict,
+        reflection: str,
+        *,
+        timeout: float = 10.0,
+        payload: str | None = None,
     ) -> bool:
         control_value = "zyx" if str(reflection).lower() == "abc" else "abc"
 
@@ -126,7 +133,9 @@ class SqliContext:
         return False
 
     @staticmethod
-    def make_vuln_dict(ptype: str, param: str, payload: str, evidence: str, turl: str, method: str, confidence: str = "high") -> dict:
+    def make_vuln_dict(
+        ptype: str, param: str, payload: str, evidence: str, turl: str, method: str, confidence: str = "high"
+    ) -> dict:
         return {
             "type": f"SQL Injection ({ptype})",
             "parameter": param,
@@ -165,12 +174,14 @@ class SqliContext:
             for csrf_key in csrf_keys:
                 match = re.search(
                     r'<input[^>]*name=["\']' + re.escape(csrf_key) + r'["\'][^>]*value=["\']([^"\']*)["\']',
-                    resp.text, re.I,
+                    resp.text,
+                    re.I,
                 )
                 if not match:
                     match = re.search(
                         r'<input[^>]*value=["\']([^"\']*)["\'][^>]*name=["\']' + re.escape(csrf_key) + r'["\']',
-                        resp.text, re.I,
+                        resp.text,
+                        re.I,
                     )
                 if match:
                     data[csrf_key] = match.group(1)

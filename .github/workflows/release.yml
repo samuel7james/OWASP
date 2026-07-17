@@ -1,0 +1,89 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    name: Build, scan, and publish release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Run full test suite
+        run: |
+          pip install -e ".[dev]"
+          pytest
+
+      - name: Generate SBOM (CycloneDX)
+        run: |
+          pip install cyclonedx-bom
+          cyclonedx-py environment --pyproject pyproject.toml --of JSON -o sbom.cdx.json
+          cyclonedx-py environment --pyproject pyproject.toml --of XML -o sbom.cdx.xml
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          load: true
+          tags: owasp-inspector:${{ github.ref_name }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Trivy vulnerability scan (gates the release)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: owasp-inspector:${{ github.ref_name }}
+          format: table
+          severity: CRITICAL,HIGH
+          exit-code: "1"
+
+      - name: Save image tarball
+        run: docker save owasp-inspector:${{ github.ref_name }} -o owasp-inspector-${{ github.ref_name }}.tar
+
+      - name: Generate changelog since last tag
+        id: changelog
+        run: |
+          PREV_TAG=$(git describe --tags --abbrev=0 "${{ github.ref_name }}^" 2>/dev/null || echo "")
+          {
+            echo "changelog<<EOF"
+            if [ -n "$PREV_TAG" ]; then
+              git log --pretty=format:"- %s (%h)" "${PREV_TAG}..${{ github.ref_name }}"
+            else
+              git log --pretty=format:"- %s (%h)" "${{ github.ref_name }}"
+            fi
+            echo ""
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ github.ref_name }}
+          body: |
+            ## Changes
+            ${{ steps.changelog.outputs.changelog }}
+
+            ## Artifacts
+            - `owasp-inspector-${{ github.ref_name }}.tar` — Docker image (`docker load -i ...`)
+            - `sbom.cdx.json` / `sbom.cdx.xml` — CycloneDX SBOM of the release environment
+          files: |
+            owasp-inspector-${{ github.ref_name }}.tar
+            sbom.cdx.json
+            sbom.cdx.xml
+          generate_release_notes: true

@@ -9,7 +9,9 @@ from owasp_inspector.modules.insecure_design import InsecureDesignModule
 
 def _context(http, crawled_urls=None):
     discovery = DiscoveryResult(
-        target_url="https://example.com/", final_url="https://example.com/", ok=True,
+        target_url="https://example.com/",
+        final_url="https://example.com/",
+        ok=True,
         crawled_urls=crawled_urls or [],
     )
     return ScanContext(target=ScanTarget(url="https://example.com/"), http=http, settings=None, discovery=discovery)
@@ -17,7 +19,9 @@ def _context(http, crawled_urls=None):
 
 async def test_flags_django_debug_page():
     def handler(request):
-        return httpx.Response(500, text="Technical 500 Error <p>Exception Type: ValueError</p> django.core.handlers.wsgi")
+        return httpx.Response(
+            500, text="Technical 500 Error <p>Exception Type: ValueError</p> django.core.handlers.wsgi"
+        )
 
     async with AsyncHttpClient(transport=httpx.MockTransport(handler)) as http:
         findings = await InsecureDesignModule().run(_context(http))

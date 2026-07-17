@@ -4,8 +4,14 @@ from owasp_inspector.reporting.risk import calculate_risk
 
 def _finding(severity, confidence, manual_verify=False):
     return Finding(
-        module="test", owasp_category="A00:Test", title="t", severity=severity, confidence=confidence,
-        description="d", url="https://x", manual_verification_recommended=manual_verify,
+        module="test",
+        owasp_category="A00:Test",
+        title="t",
+        severity=severity,
+        confidence=confidence,
+        description="d",
+        url="https://x",
+        manual_verification_recommended=manual_verify,
     )
 
 

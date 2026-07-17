@@ -29,10 +29,7 @@ def _cookie_targets(discovery, probe_all: bool) -> list[tuple[str, dict]]:
 
 
 def _param_targets(discovery) -> list[tuple[str, dict]]:
-    return [
-        (t.method, {"url": t.url, "params": t.params, "defaults": t.defaults})
-        for t in discovery.targets
-    ]
+    return [(t.method, {"url": t.url, "params": t.params, "defaults": t.defaults}) for t in discovery.targets]
 
 
 @register_module
@@ -80,11 +77,15 @@ class SqliModule(Module):
             vulns, candidates = await scanner.scan(targets)
 
         findings = [
-            convert_legacy_finding(v, module=self.name, owasp_category=self.owasp_category, target_url=discovery.final_url)
+            convert_legacy_finding(
+                v, module=self.name, owasp_category=self.owasp_category, target_url=discovery.final_url
+            )
             for v in vulns
         ]
         findings.extend(
-            convert_legacy_finding(c, module=self.name, owasp_category=self.owasp_category, target_url=discovery.final_url)
+            convert_legacy_finding(
+                c, module=self.name, owasp_category=self.owasp_category, target_url=discovery.final_url
+            )
             for c in candidates
         )
         return findings

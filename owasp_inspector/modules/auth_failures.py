@@ -8,9 +8,7 @@ from owasp_inspector.core.registry import register_module
 
 _REFERENCE = "https://owasp.org/Top10/A07_2021-Identification_and_Authentication_Failures/"
 
-_SESSION_COOKIE_RE = re.compile(
-    r"(sess|jsessionid|phpsessid|connect\.sid|auth|token)", re.IGNORECASE
-)
+_SESSION_COOKIE_RE = re.compile(r"(sess|jsessionid|phpsessid|connect\.sid|auth|token)", re.IGNORECASE)
 _LOGIN_PATH_RE = re.compile(r"(login|signin|sign-in|log-in|auth)", re.IGNORECASE)
 
 

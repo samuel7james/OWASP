@@ -350,7 +350,9 @@ async def test_content_type_switch(ctx: CsrfContext, form: dict) -> dict | None:
     return None
 
 
-async def test_token_entropy(ctx: CsrfContext, form: dict, *, num_samples: int = 5, entropy_threshold: float = 2.4, authenticated: bool = False) -> dict | None:
+async def test_token_entropy(
+    ctx: CsrfContext, form: dict, *, num_samples: int = 5, entropy_threshold: float = 2.4, authenticated: bool = False
+) -> dict | None:
     if not form.get("has_token"):
         return None
     form_url = form.get("url", "")
@@ -403,8 +405,7 @@ async def test_token_entropy(ctx: CsrfContext, form: dict, *, num_samples: int =
             "parameter": token_name,
             "payload": f"entropy_analysis (avg={avg_entropy:.2f})",
             "evidence": (
-                f"Token analysis for {form_url}: {evidence_str}. "
-                f"Samples: {[t[:12] + '...' for t in tokens[:3]]}"
+                f"Token analysis for {form_url}: {evidence_str}. Samples: {[t[:12] + '...' for t in tokens[:3]]}"
             ),
             "tool": "native_csrf",
             "confidence": confidence,

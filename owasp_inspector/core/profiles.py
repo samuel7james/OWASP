@@ -13,9 +13,7 @@ class ScanProfile:
 
 
 PROFILES: dict[str, ScanProfile] = {
-    "fast": ScanProfile(
-        name="fast", max_concurrency=20, timeout=10.0, max_retries=1, min_request_interval_seconds=0.0
-    ),
+    "fast": ScanProfile(name="fast", max_concurrency=20, timeout=10.0, max_retries=1, min_request_interval_seconds=0.0),
     "thorough": ScanProfile(
         name="thorough", max_concurrency=10, timeout=30.0, max_retries=2, min_request_interval_seconds=0.1
     ),

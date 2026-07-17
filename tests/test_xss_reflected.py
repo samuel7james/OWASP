@@ -24,7 +24,9 @@ async def test_flags_unescaped_reflection_in_script_body():
 
     ctx = _make_ctx(handler)
     scanner = ReflectedXssScanner(ctx, max_concurrency=5)
-    vulns = await scanner.scan([("get", {"url": "https://example.com/search", "params": ["q"], "defaults": {"q": "hi"}})])
+    vulns = await scanner.scan(
+        [("get", {"url": "https://example.com/search", "params": ["q"], "defaults": {"q": "hi"}})]
+    )
     await ctx.http.aclose()
 
     assert len(vulns) == 1
@@ -38,11 +40,14 @@ async def test_does_not_flag_properly_escaped_reflection():
         q = query.get("q", "")
         # simulate proper output encoding: server HTML-escapes before reflecting
         import html
+
         return httpx.Response(200, text=f"<html><body>results for: {html.escape(q)}</body></html>")
 
     ctx = _make_ctx(handler)
     scanner = ReflectedXssScanner(ctx, max_concurrency=5)
-    vulns = await scanner.scan([("get", {"url": "https://example.com/search", "params": ["q"], "defaults": {"q": "hi"}})])
+    vulns = await scanner.scan(
+        [("get", {"url": "https://example.com/search", "params": ["q"], "defaults": {"q": "hi"}})]
+    )
     await ctx.http.aclose()
 
     assert vulns == []

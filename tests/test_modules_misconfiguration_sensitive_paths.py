@@ -16,8 +16,11 @@ _ALL_SECURITY_HEADERS = {
 
 def _context(http, final_url="https://example.com/"):
     discovery = DiscoveryResult(
-        target_url=final_url, final_url=final_url, ok=True,
-        headers=_ALL_SECURITY_HEADERS, tls=TlsInfo(),
+        target_url=final_url,
+        final_url=final_url,
+        ok=True,
+        headers=_ALL_SECURITY_HEADERS,
+        tls=TlsInfo(),
     )
     return ScanContext(target=ScanTarget(url=final_url), http=http, settings=None, discovery=discovery)
 

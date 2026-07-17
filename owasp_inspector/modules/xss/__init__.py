@@ -58,6 +58,8 @@ class XssModule(Module):
             vulns.extend(await scanner.scan_context_aware(targets, vulns))
 
         return [
-            convert_legacy_finding(v, module=self.name, owasp_category=self.owasp_category, target_url=discovery.final_url)
+            convert_legacy_finding(
+                v, module=self.name, owasp_category=self.owasp_category, target_url=discovery.final_url
+            )
             for v in vulns
         ]

@@ -38,7 +38,13 @@ def _build_forms(discovery) -> list[dict]:
             continue
         seen.add(key)
 
-        form = {"url": t.url, "page_url": t.url, "method": t.method.upper(), "params": t.params, "defaults": dict(t.defaults)}
+        form = {
+            "url": t.url,
+            "page_url": t.url,
+            "method": t.method.upper(),
+            "params": t.params,
+            "defaults": dict(t.defaults),
+        }
         form["has_token"] = any(p.lower() in DEFAULT_TOKEN_NAMES for p in t.params)
         if form["has_token"]:
             for p in t.params:
@@ -130,6 +136,8 @@ class CsrfModule(Module):
 
         raw_findings = [f for results in all_results for f in results]
         return [
-            convert_legacy_finding(f, module=self.name, owasp_category=self.owasp_category, target_url=discovery.final_url)
+            convert_legacy_finding(
+                f, module=self.name, owasp_category=self.owasp_category, target_url=discovery.final_url
+            )
             for f in raw_findings
         ]

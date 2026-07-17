@@ -7,8 +7,19 @@ def test_report_to_dict_has_stable_top_level_schema():
     report = make_report([make_finding()])
     data = report_to_dict(report)
 
-    for key in ("schema_version", "scan_id", "target_url", "final_url", "generated_at",
-                "duration_seconds", "executive_summary", "risk", "discovery", "findings", "timeline"):
+    for key in (
+        "schema_version",
+        "scan_id",
+        "target_url",
+        "final_url",
+        "generated_at",
+        "duration_seconds",
+        "executive_summary",
+        "risk",
+        "discovery",
+        "findings",
+        "timeline",
+    ):
         assert key in data
 
 

@@ -33,5 +33,4 @@ class Module(ABC):
     owasp_category: str
 
     @abstractmethod
-    async def run(self, context: ScanContext) -> list[Finding]:
-        ...
+    async def run(self, context: ScanContext) -> list[Finding]: ...

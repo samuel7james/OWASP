@@ -9,8 +9,12 @@ from owasp_inspector.modules.misconfiguration import MisconfigurationModule
 
 def _context(headers, http, final_url="https://example.com/", tls=None):
     discovery = DiscoveryResult(
-        target_url=final_url, final_url=final_url, ok=True, status_code=200,
-        headers=headers, tls=tls or TlsInfo(),
+        target_url=final_url,
+        final_url=final_url,
+        ok=True,
+        status_code=200,
+        headers=headers,
+        tls=tls or TlsInfo(),
     )
     return ScanContext(target=ScanTarget(url=final_url), http=http, settings=None, discovery=discovery)
 
@@ -43,7 +47,11 @@ async def test_hsts_not_required_over_plain_http():
 
 
 async def test_unverifiable_tls_certificate_is_flagged():
-    tls = TlsInfo(inspected=True, version="TLSv1.2", error="certificate not verifiable (self-signed, expired, or hostname mismatch)")
+    tls = TlsInfo(
+        inspected=True,
+        version="TLSv1.2",
+        error="certificate not verifiable (self-signed, expired, or hostname mismatch)",
+    )
     async with AsyncHttpClient(transport=httpx.MockTransport(lambda r: httpx.Response(404))) as http:
         findings = await MisconfigurationModule().run(_context({}, http, tls=tls))
     assert any(f.title == "TLS certificate not verifiable" for f in findings)

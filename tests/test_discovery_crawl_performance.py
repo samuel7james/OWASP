@@ -41,4 +41,6 @@ async def test_crawl_fetches_a_wave_concurrently_not_sequentially():
     # Sequential would take (1 + WIDTH) * latency ~= 1.8s. Concurrent waves
     # take ~2 * latency (root page, then the whole second wave at once) plus
     # overhead. Generous upper bound well under the sequential figure.
-    assert elapsed < _PAGE_LATENCY_SECONDS * (1 + _WIDTH) * 0.6, f"crawl took {elapsed:.2f}s — looks sequential, not concurrent"
+    assert elapsed < _PAGE_LATENCY_SECONDS * (1 + _WIDTH) * 0.6, (
+        f"crawl took {elapsed:.2f}s — looks sequential, not concurrent"
+    )

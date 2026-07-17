@@ -13,8 +13,12 @@ class _GoodModule(Module):
     async def run(self, context):
         return [
             Finding(
-                module=self.name, owasp_category=self.owasp_category, title="found it",
-                severity=Severity.LOW, confidence=Confidence.LOW, description="d",
+                module=self.name,
+                owasp_category=self.owasp_category,
+                title="found it",
+                severity=Severity.LOW,
+                confidence=Confidence.LOW,
+                description="d",
                 url=context.target.url,
             )
         ]

@@ -10,10 +10,22 @@ from owasp_inspector.modules.csrf import CsrfModule, _build_forms
 
 def test_build_forms_detects_token_field_and_dedupes():
     discovery = DiscoveryResult(
-        target_url="https://x/", final_url="https://x/", ok=True,
+        target_url="https://x/",
+        final_url="https://x/",
+        ok=True,
         targets=[
-            ParamTarget(method="post", url="https://x/settings", params=["email", "csrf_token"], defaults={"email": "a@x.com", "csrf_token": "tok"}),
-            ParamTarget(method="post", url="https://x/settings", params=["csrf_token", "email"], defaults={"email": "a@x.com", "csrf_token": "tok"}),
+            ParamTarget(
+                method="post",
+                url="https://x/settings",
+                params=["email", "csrf_token"],
+                defaults={"email": "a@x.com", "csrf_token": "tok"},
+            ),
+            ParamTarget(
+                method="post",
+                url="https://x/settings",
+                params=["csrf_token", "email"],
+                defaults={"email": "a@x.com", "csrf_token": "tok"},
+            ),
             ParamTarget(method="get", url="https://x/search", params=["q"], defaults={}),
         ],
     )
@@ -30,9 +42,13 @@ def test_build_forms_includes_get_method_form_but_not_bare_get_link():
     # A bare crawled link with a query string must still be excluded: it's
     # not a form, and there's no reason to believe it's state-changing.
     discovery = DiscoveryResult(
-        target_url="https://x/", final_url="https://x/", ok=True,
+        target_url="https://x/",
+        final_url="https://x/",
+        ok=True,
         targets=[
-            ParamTarget(method="get", url="https://x/csrf", params=["password_new"], defaults={"password_new": ""}, is_form=True),
+            ParamTarget(
+                method="get", url="https://x/csrf", params=["password_new"], defaults={"password_new": ""}, is_form=True
+            ),
             ParamTarget(method="get", url="https://x/page", params=["id"], defaults={"id": "1"}, is_form=False),
         ],
     )
@@ -52,15 +68,27 @@ async def test_csrf_module_finds_no_token_defense_on_get_method_form(monkeypatch
 
     def _fake_client(*, max_concurrency, timeout, max_retries):
         return AsyncHttpClient(
-            max_concurrency=max_concurrency, max_retries=max_retries, timeout=5.0,
+            max_concurrency=max_concurrency,
+            max_retries=max_retries,
+            timeout=5.0,
             transport=httpx.MockTransport(handler),
         )
 
     monkeypatch.setattr(csrf_module, "AsyncHttpClient", _fake_client)
 
     discovery = DiscoveryResult(
-        target_url="https://example.com/", final_url="https://example.com/", ok=True,
-        targets=[ParamTarget(method="get", url="https://example.com/csrf", params=["password_new"], defaults={"password_new": ""}, is_form=True)],
+        target_url="https://example.com/",
+        final_url="https://example.com/",
+        ok=True,
+        targets=[
+            ParamTarget(
+                method="get",
+                url="https://example.com/csrf",
+                params=["password_new"],
+                defaults={"password_new": ""},
+                is_form=True,
+            )
+        ],
     )
     context = ScanContext(target=ScanTarget(url="https://example.com/"), http=None, settings=None, discovery=discovery)
 
@@ -76,15 +104,21 @@ async def test_csrf_module_finds_no_token_defense_end_to_end(monkeypatch):
 
     def _fake_client(*, max_concurrency, timeout, max_retries):
         return AsyncHttpClient(
-            max_concurrency=max_concurrency, max_retries=max_retries, timeout=5.0,
+            max_concurrency=max_concurrency,
+            max_retries=max_retries,
+            timeout=5.0,
             transport=httpx.MockTransport(handler),
         )
 
     monkeypatch.setattr(csrf_module, "AsyncHttpClient", _fake_client)
 
     discovery = DiscoveryResult(
-        target_url="https://example.com/", final_url="https://example.com/", ok=True,
-        targets=[ParamTarget(method="post", url="https://example.com/change-email", params=["email"], defaults={"email": ""})],
+        target_url="https://example.com/",
+        final_url="https://example.com/",
+        ok=True,
+        targets=[
+            ParamTarget(method="post", url="https://example.com/change-email", params=["email"], defaults={"email": ""})
+        ],
     )
     context = ScanContext(target=ScanTarget(url="https://example.com/"), http=None, settings=None, discovery=discovery)
 
@@ -103,15 +137,26 @@ async def test_csrf_module_no_false_positive_when_token_required_and_enforced(mo
 
     def _fake_client(*, max_concurrency, timeout, max_retries):
         return AsyncHttpClient(
-            max_concurrency=max_concurrency, max_retries=max_retries, timeout=5.0,
+            max_concurrency=max_concurrency,
+            max_retries=max_retries,
+            timeout=5.0,
             transport=httpx.MockTransport(handler),
         )
 
     monkeypatch.setattr(csrf_module, "AsyncHttpClient", _fake_client)
 
     discovery = DiscoveryResult(
-        target_url="https://example.com/", final_url="https://example.com/", ok=True,
-        targets=[ParamTarget(method="post", url="https://example.com/settings", params=["email", "csrf_token"], defaults={"email": "", "csrf_token": "realtoken1234567890123456"})],
+        target_url="https://example.com/",
+        final_url="https://example.com/",
+        ok=True,
+        targets=[
+            ParamTarget(
+                method="post",
+                url="https://example.com/settings",
+                params=["email", "csrf_token"],
+                defaults={"email": "", "csrf_token": "realtoken1234567890123456"},
+            )
+        ],
     )
     context = ScanContext(target=ScanTarget(url="https://example.com/"), http=None, settings=None, discovery=discovery)
 
@@ -127,7 +172,9 @@ async def test_csrf_module_returns_empty_when_discovery_failed():
 
 async def test_csrf_module_returns_empty_when_no_post_targets():
     discovery = DiscoveryResult(
-        target_url="https://x/", final_url="https://x/", ok=True,
+        target_url="https://x/",
+        final_url="https://x/",
+        ok=True,
         targets=[ParamTarget(method="get", url="https://x/search", params=["q"], defaults={})],
     )
     context = ScanContext(target=ScanTarget(url="https://x/"), http=None, settings=None, discovery=discovery)

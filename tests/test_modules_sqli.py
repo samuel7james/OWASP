@@ -12,7 +12,9 @@ _SQL_ERROR_BODY = "Warning: mysql_fetch_array(): supplied argument is not a vali
 
 def test_param_targets_carries_defaults_through():
     discovery = DiscoveryResult(
-        target_url="https://x/", final_url="https://x/", ok=True,
+        target_url="https://x/",
+        final_url="https://x/",
+        ok=True,
         targets=[ParamTarget(method="get", url="https://x/item", params=["id"], defaults={"id": "1"})],
     )
     targets = _param_targets(discovery)
@@ -21,7 +23,9 @@ def test_param_targets_carries_defaults_through():
 
 def test_cookie_targets_excludes_denylisted_and_empty():
     discovery = DiscoveryResult(
-        target_url="https://x/", final_url="https://x/", ok=True,
+        target_url="https://x/",
+        final_url="https://x/",
+        ok=True,
         cookies={"PHPSESSID": "abc", "TrackingId": "xyz123", "_ga": "should-be-excluded"},
     )
     targets = _cookie_targets(discovery, probe_all=False)
@@ -46,14 +50,18 @@ async def test_sqli_module_finds_error_based_vuln_end_to_end(monkeypatch):
 
     def _fake_client(*, max_concurrency, timeout, max_retries):
         return AsyncHttpClient(
-            max_concurrency=max_concurrency, max_retries=max_retries, timeout=5.0,
+            max_concurrency=max_concurrency,
+            max_retries=max_retries,
+            timeout=5.0,
             transport=httpx.MockTransport(handler),
         )
 
     monkeypatch.setattr(sqli_module, "AsyncHttpClient", _fake_client)
 
     discovery = DiscoveryResult(
-        target_url="https://example.com/", final_url="https://example.com/", ok=True,
+        target_url="https://example.com/",
+        final_url="https://example.com/",
+        ok=True,
         targets=[ParamTarget(method="get", url="https://example.com/item", params=["id"], defaults={"id": "1"})],
     )
     context = ScanContext(target=ScanTarget(url="https://example.com/"), http=None, settings=None, discovery=discovery)

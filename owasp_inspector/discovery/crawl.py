@@ -9,8 +9,21 @@ from owasp_inspector.core.http import AsyncHttpClient
 from owasp_inspector.discovery.models import ParamTarget, RobotsInfo
 
 _SKIP_EXTENSIONS = (
-    ".png", ".jpg", ".jpeg", ".gif", ".svg", ".ico", ".css", ".js",
-    ".woff", ".woff2", ".ttf", ".pdf", ".zip", ".mp4", ".mp3",
+    ".png",
+    ".jpg",
+    ".jpeg",
+    ".gif",
+    ".svg",
+    ".ico",
+    ".css",
+    ".js",
+    ".woff",
+    ".woff2",
+    ".ttf",
+    ".pdf",
+    ".zip",
+    ".mp4",
+    ".mp3",
 )
 
 
@@ -59,8 +72,11 @@ def _extract_forms(html: str, page_url: str) -> list[ParamTarget]:
         if params:
             targets.append(
                 ParamTarget(
-                    method="post" if method == "post" else "get", url=action_url,
-                    params=params, defaults=defaults, is_form=True,
+                    method="post" if method == "post" else "get",
+                    url=action_url,
+                    params=params,
+                    defaults=defaults,
+                    is_form=True,
                 )
             )
     return targets
@@ -128,7 +144,10 @@ async def crawl(
 
     while frontier and len(crawled) < max_pages:
         wave = _filter_wave(
-            frontier, origin_netloc=origin_netloc, robots=robots, respect_robots=respect_robots,
+            frontier,
+            origin_netloc=origin_netloc,
+            robots=robots,
+            respect_robots=respect_robots,
             budget=max_pages - len(crawled),
         )
         frontier = []

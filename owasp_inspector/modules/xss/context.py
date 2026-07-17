@@ -10,13 +10,32 @@ from owasp_inspector.core.http import AsyncHttpClient
 from owasp_inspector.modules.xss.payloads import XssPayloadSet
 
 _EVENT_ATTRS = (
-    "onerror", "onload", "onclick", "onmouseover", "onfocus",
-    "onblur", "onsubmit", "ontoggle", "onstart", "oninput",
-    "onmouseenter", "onchange", "onkeyup", "onkeydown",
+    "onerror",
+    "onload",
+    "onclick",
+    "onmouseover",
+    "onfocus",
+    "onblur",
+    "onsubmit",
+    "ontoggle",
+    "onstart",
+    "oninput",
+    "onmouseenter",
+    "onchange",
+    "onkeyup",
+    "onkeydown",
 )
 
 _DANGEROUS_MARKERS_FALLBACK = (
-    "alert(", "confirm(", "prompt(", "javascript:", "onerror=", "onload=", "<script", "</script", "${",
+    "alert(",
+    "confirm(",
+    "prompt(",
+    "javascript:",
+    "onerror=",
+    "onload=",
+    "<script",
+    "</script",
+    "${",
 )
 
 
@@ -84,7 +103,9 @@ class XssContext:
         return any(marker in body_lower for marker in payload_markers)
 
     @staticmethod
-    def classify_reflection_result(ptype: str, hit: dict | None, exact_payload_match: bool, dangerous_survived: bool = False):
+    def classify_reflection_result(
+        ptype: str, hit: dict | None, exact_payload_match: bool, dangerous_survived: bool = False
+    ):
         """Combines injection context + exact-match + dangerous-construct-survival
         into a (confidence, status) tuple, or None if not significant. This is
         the legacy classifier's decision table, with one deliberate fix: the
@@ -142,7 +163,17 @@ class XssContext:
         if self.body_contains_payload(body, payload):
             return True
         decoded = html.unescape(body or "")
-        for marker in ("alert(", "confirm(", "prompt(", "javascript:", "onerror=", "onload=", "<script", "</script", "${"):
+        for marker in (
+            "alert(",
+            "confirm(",
+            "prompt(",
+            "javascript:",
+            "onerror=",
+            "onload=",
+            "<script",
+            "</script",
+            "${",
+        ):
             if marker in payload and marker in decoded:
                 return True
         return False
@@ -166,7 +197,7 @@ class XssContext:
             script_text = html.unescape(script.string or script.get_text() or "")
             if canary in script_text:
                 idx = script_text.find(canary)
-                snippet = script_text[max(0, idx - 30):idx + len(canary) + 30]
+                snippet = script_text[max(0, idx - 30) : idx + len(canary) + 30]
                 return {"context": "<script> body", "snippet": snippet, "confidence": "high"}
 
         for tag in soup.find_all(True):
@@ -191,7 +222,9 @@ class XssContext:
                     return {"context": "javascript: src", "snippet": f'src="{src[:80]}"', "confidence": "high"}
 
         for variant in (body or "", decoded_body):
-            js_sink_pattern = re.compile(r'(\.innerHTML\s*=\s*["\']?[^";\']*?' + re.escape(canary) + r")", re.IGNORECASE)
+            js_sink_pattern = re.compile(
+                r'(\.innerHTML\s*=\s*["\']?[^";\']*?' + re.escape(canary) + r")", re.IGNORECASE
+            )
             m = js_sink_pattern.search(variant)
             if m:
                 return {"context": "innerHTML assignment", "snippet": m.group(1)[:100], "confidence": "high"}
@@ -204,7 +237,11 @@ class XssContext:
         select_pattern = re.compile(r"<(?:select|option)[^>]*>[^<]*?" + re.escape(canary) + r"[^<]*?</", re.IGNORECASE)
         m = select_pattern.search(body or "")
         if m:
-            return {"context": "select/option element (document.write sink)", "snippet": m.group(0)[:100], "confidence": "high"}
+            return {
+                "context": "select/option element (document.write sink)",
+                "snippet": m.group(0)[:100],
+                "confidence": "high",
+            }
 
         bare_pattern = re.compile(r">\s*[^<]*?" + re.escape(canary) + r"[^<]*?\s*<")
         m = bare_pattern.search(body or "")

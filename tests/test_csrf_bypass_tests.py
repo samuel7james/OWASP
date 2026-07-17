@@ -66,7 +66,13 @@ async def test_remove_token_flags_server_accepting_request_without_token():
         return httpx.Response(200, text='<input type="hidden" name="csrf_token" value="tok1">')
 
     ctx = _ctx(handler)
-    form = {"url": "https://x/settings", "params": ["email", "csrf_token"], "defaults": {"email": "", "csrf_token": "tok1"}, "has_token": True, "token_field": "csrf_token"}
+    form = {
+        "url": "https://x/settings",
+        "params": ["email", "csrf_token"],
+        "defaults": {"email": "", "csrf_token": "tok1"},
+        "has_token": True,
+        "token_field": "csrf_token",
+    }
     result = await bt.test_remove_token(ctx, form)
     await ctx.http.aclose()
 
@@ -81,7 +87,13 @@ async def test_remove_token_no_finding_when_server_rejects():
         return httpx.Response(200, text='<input type="hidden" name="csrf_token" value="tok1">')
 
     ctx = _ctx(handler)
-    form = {"url": "https://x/settings", "params": ["email", "csrf_token"], "defaults": {"email": "", "csrf_token": "tok1"}, "has_token": True, "token_field": "csrf_token"}
+    form = {
+        "url": "https://x/settings",
+        "params": ["email", "csrf_token"],
+        "defaults": {"email": "", "csrf_token": "tok1"},
+        "has_token": True,
+        "token_field": "csrf_token",
+    }
     result = await bt.test_remove_token(ctx, form)
     await ctx.http.aclose()
     assert result is None
@@ -94,7 +106,12 @@ async def test_tampered_token_flags_static_fake_acceptance():
         return httpx.Response(200, text='<input type="hidden" name="csrf_token" value="realtoken123456789012345678">')
 
     ctx = _ctx(handler)
-    form = {"url": "https://x/settings", "params": ["email", "csrf_token"], "defaults": {"email": ""}, "has_token": True}
+    form = {
+        "url": "https://x/settings",
+        "params": ["email", "csrf_token"],
+        "defaults": {"email": ""},
+        "has_token": True,
+    }
     result = await bt.test_tampered_token(ctx, form)
     await ctx.http.aclose()
 
@@ -104,10 +121,18 @@ async def test_tampered_token_flags_static_fake_acceptance():
 
 async def test_token_entropy_flags_low_entropy_static_token():
     def handler(request: httpx.Request) -> httpx.Response:
-        return httpx.Response(200, text='<input type="hidden" name="csrf_token" value="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa">')
+        return httpx.Response(
+            200, text='<input type="hidden" name="csrf_token" value="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa">'
+        )
 
     ctx = _ctx(handler)
-    form = {"url": "https://x/settings", "params": ["csrf_token"], "defaults": {}, "has_token": True, "token_field": "csrf_token"}
+    form = {
+        "url": "https://x/settings",
+        "params": ["csrf_token"],
+        "defaults": {},
+        "has_token": True,
+        "token_field": "csrf_token",
+    }
     result = await bt.test_token_entropy(ctx, form, num_samples=3)
     await ctx.http.aclose()
 
@@ -125,7 +150,13 @@ async def test_token_entropy_no_false_positive_on_secure_random_hex_token():
         return httpx.Response(200, text=f'<input type="hidden" name="csrf_token" value="{secrets.token_hex(20)}">')
 
     ctx = _ctx(handler)
-    form = {"url": "https://x/settings", "params": ["csrf_token"], "defaults": {}, "has_token": True, "token_field": "csrf_token"}
+    form = {
+        "url": "https://x/settings",
+        "params": ["csrf_token"],
+        "defaults": {},
+        "has_token": True,
+        "token_field": "csrf_token",
+    }
     result = await bt.test_token_entropy(ctx, form, num_samples=3, authenticated=True)
     await ctx.http.aclose()
     assert result is None
@@ -141,7 +172,13 @@ async def test_token_entropy_no_finding_for_high_entropy_unique_tokens():
         return httpx.Response(200, text=f'<input type="hidden" name="csrf_token" value="{next(values)}">')
 
     ctx = _ctx(handler)
-    form = {"url": "https://x/settings", "params": ["csrf_token"], "defaults": {}, "has_token": True, "token_field": "csrf_token"}
+    form = {
+        "url": "https://x/settings",
+        "params": ["csrf_token"],
+        "defaults": {},
+        "has_token": True,
+        "token_field": "csrf_token",
+    }
     result = await bt.test_token_entropy(ctx, form, num_samples=3, authenticated=True)
     await ctx.http.aclose()
     assert result is None

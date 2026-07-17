@@ -25,8 +25,12 @@ def make_scan_result(findings=None, *, url="https://example.com/", technology="u
     scan.start()
     scan.complete()
     discovery = DiscoveryResult(
-        target_url=url, final_url=url, ok=True, status_code=200,
-        headers={"server": "nginx"}, fingerprint=Fingerprint(technology=technology),
+        target_url=url,
+        final_url=url,
+        ok=True,
+        status_code=200,
+        headers={"server": "nginx"},
+        fingerprint=Fingerprint(technology=technology),
     )
     return ScanResult(scan=scan, discovery=discovery, findings=findings or [])
 

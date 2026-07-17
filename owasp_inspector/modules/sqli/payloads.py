@@ -63,7 +63,9 @@ def load_sqli_payloads() -> SqliPayloadSet:
 
     if _PATTERNS_FILE.exists():
         try:
-            patterns = [line.strip() for line in _PATTERNS_FILE.read_text(encoding="utf-8").splitlines() if line.strip()]
+            patterns = [
+                line.strip() for line in _PATTERNS_FILE.read_text(encoding="utf-8").splitlines() if line.strip()
+            ]
         except OSError:
             pass
 

@@ -53,7 +53,10 @@ def render_markdown(report: ReportData) -> str:
     add(f"- Pages crawled: {len(report.discovery.crawled_urls)}")
     add(f"- Injectable parameter targets found: {report.discovery.injectable_param_count}")
     add(f"- robots.txt fetched: {report.discovery.robots.fetched}")
-    add(f"- TLS inspected: {report.discovery.tls.inspected}" + (f" ({report.discovery.tls.error})" if report.discovery.tls.error else ""))
+    add(
+        f"- TLS inspected: {report.discovery.tls.inspected}"
+        + (f" ({report.discovery.tls.error})" if report.discovery.tls.error else "")
+    )
     add("")
 
     add("## Findings")

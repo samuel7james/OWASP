@@ -6,8 +6,11 @@ from owasp_inspector.modules.vulnerable_components import VulnerableComponentsMo
 
 def _context(headers=None, fingerprint=None):
     discovery = DiscoveryResult(
-        target_url="https://example.com/", final_url="https://example.com/", ok=True,
-        headers=headers or {}, fingerprint=fingerprint or Fingerprint(),
+        target_url="https://example.com/",
+        final_url="https://example.com/",
+        ok=True,
+        headers=headers or {},
+        fingerprint=fingerprint or Fingerprint(),
     )
     return ScanContext(target=ScanTarget(url="https://example.com/"), http=None, settings=None, discovery=discovery)
 
@@ -27,7 +30,9 @@ async def test_extracts_version_from_x_powered_by():
 
 async def test_reports_fingerprint_when_known():
     module = VulnerableComponentsModule()
-    findings = await module.run(_context(fingerprint=Fingerprint(technology="django", confidence="high", evidence=["Cookie match: csrftoken"])))
+    findings = await module.run(
+        _context(fingerprint=Fingerprint(technology="django", confidence="high", evidence=["Cookie match: csrftoken"]))
+    )
     assert any("django" in f.title for f in findings)
 
 

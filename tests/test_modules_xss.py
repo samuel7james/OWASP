@@ -12,7 +12,9 @@ from owasp_inspector.modules.xss import XssModule, _param_targets
 
 def test_param_targets_carries_defaults_through():
     discovery = DiscoveryResult(
-        target_url="https://x/", final_url="https://x/", ok=True,
+        target_url="https://x/",
+        final_url="https://x/",
+        ok=True,
         targets=[ParamTarget(method="get", url="https://x/search", params=["q"], defaults={"q": "hi"})],
     )
     targets = _param_targets(discovery)
@@ -27,14 +29,18 @@ async def test_xss_module_finds_reflected_vuln_end_to_end(monkeypatch):
 
     def _fake_client(*, max_concurrency, timeout, max_retries):
         return AsyncHttpClient(
-            max_concurrency=max_concurrency, max_retries=max_retries, timeout=5.0,
+            max_concurrency=max_concurrency,
+            max_retries=max_retries,
+            timeout=5.0,
             transport=httpx.MockTransport(handler),
         )
 
     monkeypatch.setattr(xss_module, "AsyncHttpClient", _fake_client)
 
     discovery = DiscoveryResult(
-        target_url="https://example.com/", final_url="https://example.com/", ok=True,
+        target_url="https://example.com/",
+        final_url="https://example.com/",
+        ok=True,
         targets=[ParamTarget(method="get", url="https://example.com/search", params=["q"], defaults={"q": "hi"})],
     )
     context = ScanContext(target=ScanTarget(url="https://example.com/"), http=None, settings=None, discovery=discovery)
@@ -54,14 +60,18 @@ async def test_xss_module_no_false_positive_on_properly_escaped_target(monkeypat
 
     def _fake_client(*, max_concurrency, timeout, max_retries):
         return AsyncHttpClient(
-            max_concurrency=max_concurrency, max_retries=max_retries, timeout=5.0,
+            max_concurrency=max_concurrency,
+            max_retries=max_retries,
+            timeout=5.0,
             transport=httpx.MockTransport(handler),
         )
 
     monkeypatch.setattr(xss_module, "AsyncHttpClient", _fake_client)
 
     discovery = DiscoveryResult(
-        target_url="https://example.com/", final_url="https://example.com/", ok=True,
+        target_url="https://example.com/",
+        final_url="https://example.com/",
+        ok=True,
         targets=[ParamTarget(method="get", url="https://example.com/search", params=["q"], defaults={"q": "hi"})],
     )
     context = ScanContext(target=ScanTarget(url="https://example.com/"), http=None, settings=None, discovery=discovery)

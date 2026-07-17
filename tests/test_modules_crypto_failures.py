@@ -12,12 +12,16 @@ def _context(**kwargs):
 
 
 async def test_flags_cookie_missing_secure_over_https():
-    findings = await CryptoFailuresModule().run(_context(cookie_flags=[CookieFlags(name="sid", secure=False, httponly=True, samesite="Lax")]))
+    findings = await CryptoFailuresModule().run(
+        _context(cookie_flags=[CookieFlags(name="sid", secure=False, httponly=True, samesite="Lax")])
+    )
     assert any("Secure flag" in f.title for f in findings)
 
 
 async def test_does_not_flag_secure_cookie():
-    findings = await CryptoFailuresModule().run(_context(cookie_flags=[CookieFlags(name="sid", secure=True, httponly=True, samesite="Lax")]))
+    findings = await CryptoFailuresModule().run(
+        _context(cookie_flags=[CookieFlags(name="sid", secure=True, httponly=True, samesite="Lax")])
+    )
     assert findings == []
 
 
@@ -32,9 +36,7 @@ async def test_does_not_flag_modern_tls_version():
 
 
 async def test_flags_sensitive_param_in_url():
-    findings = await CryptoFailuresModule().run(
-        _context(crawled_urls=["https://example.com/reset?token=abc123"])
-    )
+    findings = await CryptoFailuresModule().run(_context(crawled_urls=["https://example.com/reset?token=abc123"]))
     assert any(f.parameter == "token" for f in findings)
     assert all(f.manual_verification_recommended for f in findings if f.parameter == "token")
 

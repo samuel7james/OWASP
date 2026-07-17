@@ -67,7 +67,7 @@ class ReflectedXssScanner:
                     "type": f"XSS (Reflected - {ptype})",
                     "parameter": param,
                     "payload": payload,
-                    "evidence": f'Canary {canary} reflected in {hit.get("context", "response")}',
+                    "evidence": f"Canary {canary} reflected in {hit.get('context', 'response')}",
                     "tool": "xsstrike_reflected",
                     "confidence": confidence,
                     "status": status,
@@ -90,7 +90,10 @@ class ReflectedXssScanner:
 
         for method, target in targets:
             for param in target["params"]:
-                if any(v["parameter"] == param and v["url"] == target["url"] and v["method"] == method for v in already_found + found):
+                if any(
+                    v["parameter"] == param and v["url"] == target["url"] and v["method"] == method
+                    for v in already_found + found
+                ):
                     continue
 
                 try:
@@ -127,17 +130,19 @@ class ReflectedXssScanner:
                                 and payload_hit
                                 and payload_hit.get("confidence") == "high"
                             ):
-                                found.append({
-                                    "type": f"XSS (Reflected - {ptype})",
-                                    "parameter": param,
-                                    "payload": payload,
-                                    "evidence": f'Context-aware payload reflected in {payload_hit.get("context", "script context")}: {ptype}',
-                                    "tool": "xsstrike_reflected_context",
-                                    "confidence": "high",
-                                    "status": "confirmed",
-                                    "url": target["url"],
-                                    "method": method,
-                                })
+                                found.append(
+                                    {
+                                        "type": f"XSS (Reflected - {ptype})",
+                                        "parameter": param,
+                                        "payload": payload,
+                                        "evidence": f"Context-aware payload reflected in {payload_hit.get('context', 'script context')}: {ptype}",
+                                        "tool": "xsstrike_reflected_context",
+                                        "confidence": "high",
+                                        "status": "confirmed",
+                                        "url": target["url"],
+                                        "method": method,
+                                    }
+                                )
                                 break
                         except Exception:
                             continue

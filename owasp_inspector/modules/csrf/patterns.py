@@ -4,13 +4,21 @@ import re
 
 # Response body patterns indicating a CSRF/forgery check rejected the request.
 CSRF_ERROR_PATTERNS = [
-    r"invalid\s+csrf", r"csrf\s+token\s+(invalid|missing|mismatch|expired)",
-    r"forbidden", r"403\s+forbidden", r"bad\s+request",
-    r"token\s+mismatch", r"invalid\s+token", r"missing\s+token",
-    r"csrf\s+verification\s+failed", r"request\s+forgery",
-    r"unauthorized", r"security\s+token",
+    r"invalid\s+csrf",
+    r"csrf\s+token\s+(invalid|missing|mismatch|expired)",
+    r"forbidden",
+    r"403\s+forbidden",
+    r"bad\s+request",
+    r"token\s+mismatch",
+    r"invalid\s+token",
+    r"missing\s+token",
+    r"csrf\s+verification\s+failed",
+    r"request\s+forgery",
+    r"unauthorized",
+    r"security\s+token",
 ]
 CSRF_ERROR_RE = re.compile("|".join(CSRF_ERROR_PATTERNS), re.IGNORECASE)
+
 
 # Response body patterns indicating the state-changing action actually
 # succeeded. Ported from Logic/vulnerability_scan/csrf/patterns.py with two
@@ -37,17 +45,30 @@ def _not_negated(phrase: str) -> str:
 
 SUCCESS_PATTERNS = [
     r"\bemail\b(?:(?!\bnot\b|\bfail(?:ed)?\b|\berror\b|\binvalid\b).)*?\bupdated\b",
-    _not_negated(r"successfully\s+changed"), _not_negated(r"has\s+been\s+updated"),
-    _not_negated(r"profile\s+updated"), _not_negated(r"settings\s+saved"), _not_negated(r"password\s+changed"),
-    _not_negated(r"account\s+updated"), r'"success":\s*true',
+    _not_negated(r"successfully\s+changed"),
+    _not_negated(r"has\s+been\s+updated"),
+    _not_negated(r"profile\s+updated"),
+    _not_negated(r"settings\s+saved"),
+    _not_negated(r"password\s+changed"),
+    _not_negated(r"account\s+updated"),
+    r'"success":\s*true',
 ]
 SUCCESS_RE = re.compile("|".join(SUCCESS_PATTERNS), re.IGNORECASE | re.DOTALL)
 
 # Paths that are not state-changing and should not be flagged/tested as CSRF targets.
 NON_STATE_CHANGING_PATHS = {
-    "/login", "/signin", "/sign-in", "/log-in",
+    "/login",
+    "/signin",
+    "/sign-in",
+    "/log-in",
     "/search",
-    "/logout", "/signout", "/sign-out", "/log-out",
-    "/forgot-password", "/reset-password",
-    "/register", "/signup", "/sign-up",
+    "/logout",
+    "/signout",
+    "/sign-out",
+    "/log-out",
+    "/forgot-password",
+    "/reset-password",
+    "/register",
+    "/signup",
+    "/sign-up",
 }

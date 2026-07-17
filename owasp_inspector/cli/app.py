@@ -55,16 +55,28 @@ def _validate_formats(value: str) -> list[str]:
 @app.command()
 def scan(
     url: str = typer.Argument(..., help="Target URL to assess. Only scan systems you own or are authorized to test."),
-    profile: str = typer.Option(DEFAULT_PROFILE, "--profile", "-p", help=f"Scan profile: {', '.join(sorted(PROFILES))}"),
+    profile: str = typer.Option(
+        DEFAULT_PROFILE, "--profile", "-p", help=f"Scan profile: {', '.join(sorted(PROFILES))}"
+    ),
     max_pages: int = typer.Option(40, "--max-pages", help="Maximum pages to crawl during discovery."),
-    formats: str = typer.Option("html,json", "--format", "-f", help="Comma-separated report formats: json, markdown, html, pdf"),
-    output_dir: Path = typer.Option(Path("Data") / "reports", "--output-dir", "-o", help="Directory to write reports into."),
-    yes: bool = typer.Option(False, "--yes", "-y", help="Skip the interactive authorization prompt (same as OWASP_INSPECTOR_AUTHORIZED=1)."),
+    formats: str = typer.Option(
+        "html,json", "--format", "-f", help="Comma-separated report formats: json, markdown, html, pdf"
+    ),
+    output_dir: Path = typer.Option(
+        Path("Data") / "reports", "--output-dir", "-o", help="Directory to write reports into."
+    ),
+    yes: bool = typer.Option(
+        False, "--yes", "-y", help="Skip the interactive authorization prompt (same as OWASP_INSPECTOR_AUTHORIZED=1)."
+    ),
     resume: bool = typer.Option(
-        False, "--resume", help="Reuse the cached discovery result for this URL instead of re-crawling, if one completed within the last hour."
+        False,
+        "--resume",
+        help="Reuse the cached discovery result for this URL instead of re-crawling, if one completed within the last hour.",
     ),
     respect_robots: bool = typer.Option(
-        False, "--respect-robots", help="Honor robots.txt Disallow rules during the crawl. Off by default: robots.txt is a crawler-politeness convention, not access control, and this only runs after you've confirmed authorization."
+        False,
+        "--respect-robots",
+        help="Honor robots.txt Disallow rules during the crawl. Off by default: robots.txt is a crawler-politeness convention, not access control, and this only runs after you've confirmed authorization.",
     ),
 ):
     """Run a fully automated OWASP Top 10 assessment against URL and write reports.
@@ -140,7 +152,9 @@ def history(
     table.add_column("Findings", justify="right")
     table.add_column("Generated")
     for entry in entries[-limit:][::-1]:
-        table.add_row(entry.scan_id, entry.final_url, entry.grade, str(entry.score), str(entry.finding_count), entry.generated_at)
+        table.add_row(
+            entry.scan_id, entry.final_url, entry.grade, str(entry.score), str(entry.finding_count), entry.generated_at
+        )
     console.print(table)
 
 

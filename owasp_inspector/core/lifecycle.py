@@ -43,9 +43,7 @@ class Scan:
     def transition(self, new_state: ScanState, detail: str | None = None) -> None:
         allowed = _ALLOWED_TRANSITIONS[self.state.value]
         if new_state.value not in allowed:
-            raise ScanError(
-                f"Invalid scan state transition: {self.state.value} -> {new_state.value}"
-            )
+            raise ScanError(f"Invalid scan state transition: {self.state.value} -> {new_state.value}")
         self.state = new_state
         self.history.append(ScanEvent(new_state, detail=detail))
 

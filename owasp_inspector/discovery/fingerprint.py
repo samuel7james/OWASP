@@ -11,7 +11,9 @@ from owasp_inspector.discovery.models import Fingerprint
 # rather than duplicating it — it's just data, so no coupling to the legacy Logic/ code.
 # parents[2]: discovery/ -> owasp_inspector/ -> repo root. Holds for an editable/source
 # checkout; a future packaged distribution will need this data shipped as package data.
-_SIGNATURES_FILE = Path(__file__).resolve().parents[2] / "Data" / "Payloads" / "csrf_payloads" / "framework_signatures.json"
+_SIGNATURES_FILE = (
+    Path(__file__).resolve().parents[2] / "Data" / "Payloads" / "csrf_payloads" / "framework_signatures.json"
+)
 
 _signatures_cache: dict | None = None
 

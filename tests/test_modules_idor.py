@@ -45,7 +45,9 @@ async def test_ignores_non_numeric_and_non_id_params():
 
     async with AsyncHttpClient(transport=httpx.MockTransport(handler)) as http:
         module = IdorModule()
-        findings = await module.run(_context(http, ["https://example.com/search?q=hello", "https://example.com/user?id=abc"]))
+        findings = await module.run(
+            _context(http, ["https://example.com/search?q=hello", "https://example.com/user?id=abc"])
+        )
 
     assert findings == []
 

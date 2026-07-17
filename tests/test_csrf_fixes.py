@@ -40,9 +40,11 @@ def test_result_saver_writes_under_repo_root_data_dir(tmp_path, monkeypatch):
     ResultSaver.save(["dummy finding"])
 
     repo_root = os.path.dirname(
-        os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
-            __import__("vulnerability_scan.csrf", fromlist=["x"]).__file__
-        ))))
+        os.path.dirname(
+            os.path.dirname(
+                os.path.dirname(os.path.abspath(__import__("vulnerability_scan.csrf", fromlist=["x"]).__file__))
+            )
+        )
     )
     expected_dir = os.path.join(repo_root, "Data", "csrf_scan_results")
     assert os.path.normpath(captured["dir"]) == os.path.normpath(expected_dir)

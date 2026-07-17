@@ -48,7 +48,10 @@ def test_classify_reflection_result_reflection_check_ignores_bare_body_text_hit(
 
 def test_classify_reflection_result_reflection_check_reports_structural_hit():
     hit = {"context": "<script> body", "confidence": "high"}
-    assert XssContext.classify_reflection_result("reflection-check", hit, exact_payload_match=True) == ("medium", "candidate")
+    assert XssContext.classify_reflection_result("reflection-check", hit, exact_payload_match=True) == (
+        "medium",
+        "candidate",
+    )
 
 
 def test_classify_reflection_result_confirms_script_context_with_exact_match():
@@ -63,8 +66,13 @@ def test_classify_reflection_result_none_when_no_hit():
 
 def test_classify_reflection_result_low_confidence_body_text_needs_dangerous_survival():
     hit = {"context": "HTML body text", "confidence": "low"}
-    assert XssContext.classify_reflection_result("script-tag", hit, exact_payload_match=True, dangerous_survived=False) is None
-    assert XssContext.classify_reflection_result("script-tag", hit, exact_payload_match=True, dangerous_survived=True) == ("low", "candidate")
+    assert (
+        XssContext.classify_reflection_result("script-tag", hit, exact_payload_match=True, dangerous_survived=False)
+        is None
+    )
+    assert XssContext.classify_reflection_result(
+        "script-tag", hit, exact_payload_match=True, dangerous_survived=True
+    ) == ("low", "candidate")
 
 
 def test_payload_dangerous_constructs_survived_true_when_marker_present():
@@ -74,7 +82,10 @@ def test_payload_dangerous_constructs_survived_true_when_marker_present():
 
 def test_payload_dangerous_constructs_survived_false_when_escaped():
     ctx = _ctx()
-    assert ctx.payload_dangerous_constructs_survived("&lt;script&gt;alert(1)&lt;/script&gt;", "<script>alert(1)</script>") is False
+    assert (
+        ctx.payload_dangerous_constructs_survived("&lt;script&gt;alert(1)&lt;/script&gt;", "<script>alert(1)</script>")
+        is False
+    )
 
 
 def test_payload_dangerous_constructs_survived_false_when_marker_has_no_metachars_but_payload_escaped():

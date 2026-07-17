@@ -46,9 +46,19 @@ _DS_STORE_MAGIC = b"\x00\x00\x00\x01Bud1"
 # format-specific signature (not just "got a 200") to avoid false positives
 # from soft-404 pages that return 200 for anything.
 _SENSITIVE_PATH_CHECKS = [
-    ("/.git/HEAD", lambda r: bool(_GIT_HEAD_RE.match(r.text.strip())), "Exposed .git repository (HEAD readable)", Severity.HIGH),
+    (
+        "/.git/HEAD",
+        lambda r: bool(_GIT_HEAD_RE.match(r.text.strip())),
+        "Exposed .git repository (HEAD readable)",
+        Severity.HIGH,
+    ),
     ("/.git/config", lambda r: "[core]" in r.text, "Exposed .git repository (config readable)", Severity.HIGH),
-    ("/.env", lambda r: bool(_ENV_LINE_RE.search(r.text)) and "<html" not in r.text.lower(), "Exposed .env file", Severity.CRITICAL),
+    (
+        "/.env",
+        lambda r: bool(_ENV_LINE_RE.search(r.text)) and "<html" not in r.text.lower(),
+        "Exposed .env file",
+        Severity.CRITICAL,
+    ),
     ("/.DS_Store", lambda r: r.content.startswith(_DS_STORE_MAGIC), "Exposed .DS_Store file", Severity.LOW),
 ]
 

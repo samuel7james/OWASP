@@ -8,7 +8,9 @@ from owasp_inspector.modules.ssrf import SsrfModule
 
 
 def _context(http, targets):
-    discovery = DiscoveryResult(target_url="https://example.com/", final_url="https://example.com/", ok=True, targets=targets)
+    discovery = DiscoveryResult(
+        target_url="https://example.com/", final_url="https://example.com/", ok=True, targets=targets
+    )
     return ScanContext(target=ScanTarget(url="https://example.com/"), http=http, settings=None, discovery=discovery)
 
 

@@ -29,4 +29,6 @@ async def test_discovery_benchmark_stays_within_generous_ceiling(capsys):
 
     output = capsys.readouterr().out
     assert f"pages crawled:         {_PAGE_COUNT}" in output
-    assert elapsed < _CEILING_SECONDS, f"discovery of {_PAGE_COUNT} mocked pages took {elapsed:.2f}s — possible performance regression"
+    assert elapsed < _CEILING_SECONDS, (
+        f"discovery of {_PAGE_COUNT} mocked pages took {elapsed:.2f}s — possible performance regression"
+    )

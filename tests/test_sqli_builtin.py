@@ -50,7 +50,9 @@ async def test_does_not_flag_error_pattern_already_present_in_baseline():
     ctx = SqliContext(http, load_sqli_payloads())
     scanner = BuiltinSqliScanner(http, ctx, max_concurrency=10)
 
-    targets = [("get", {"url": "https://example.com/item", "params": ["Submit"], "defaults": {"id": "", "Submit": "Submit"}})]
+    targets = [
+        ("get", {"url": "https://example.com/item", "params": ["Submit"], "defaults": {"id": "", "Submit": "Submit"}})
+    ]
     vulns, candidates = await scanner.scan(targets)
     await http.aclose()
 
@@ -89,10 +91,16 @@ async def test_post_target_with_csrf_field_is_handled():
     ctx = SqliContext(http, load_sqli_payloads())
     scanner = BuiltinSqliScanner(http, ctx, max_concurrency=10)
 
-    targets = [("post", {
-        "url": "https://example.com/comment", "params": ["body", "csrf_token"],
-        "defaults": {"body": "hi", "csrf_token": "tok"},
-    })]
+    targets = [
+        (
+            "post",
+            {
+                "url": "https://example.com/comment",
+                "params": ["body", "csrf_token"],
+                "defaults": {"body": "hi", "csrf_token": "tok"},
+            },
+        )
+    ]
     vulns, candidates = await scanner.scan(targets)
     await http.aclose()
 
