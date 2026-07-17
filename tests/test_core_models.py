@@ -19,4 +19,3 @@ def test_finding_requires_core_fields_and_defaults_are_sane():
 def test_scan_target_defaults():
     target = ScanTarget(url="https://example.com")
     assert target.cookie is None
-    assert target.credentials is None

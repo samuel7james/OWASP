@@ -4,6 +4,24 @@ All notable changes to this project are documented here. Format loosely follows 
 
 ## [Unreleased]
 
+## Phase 11 — Final Engineering Review
+
+### Fixed
+- A stray `print()` inside the async SQLi scanner (`sqli/builtin.py`, WAF-detection warning) — the only remaining raw stdout write left in `owasp_inspector/` outside the CLI layer, which would have corrupted Rich's live spinner display during a scan. Converted to `logging.warning`, matching the convention already used in `core/orchestrator.py`.
+- Two stale `TASKS.md` checkboxes found by a systematic sweep for unchecked items inside phases already marked complete: Phase 5's "remaining categories" item still read as deferred, contradicting Phase 8's own completed work (A02/A04/A07/A08 were in fact built there); Phase 2's "dead `UI/*.py` stubs" item was still open despite those files having no source left to revive (only orphaned bytecode, now deleted from disk).
+
+### Removed
+- `ScanTarget.credentials` (`core/models.py`) — added in anticipation of wiring authenticated scanning into the CLI, but nothing in `owasp_inspector/` ever read it once the CSRF port's `Authenticator` login flow was explicitly deferred. Confirmed unused repo-wide (beyond its own test assertion) before removing.
+
+### Changed
+- Clarified `core/lifecycle.py`'s `Scan` docstring, which incorrectly implied its `pause`/`resume` state-machine methods are what power the CLI's `--resume` flag — that's an unrelated mechanism (`DiscoveryCache`). Kept the methods themselves: unlike `credentials`, they're not tied to a specific deferred feature, just not wired to a caller yet.
+
+### Verified
+- Full sweep for dead code (`vulture`, plus manual checks for TODO/FIXME markers, orphaned files, and stray prints) turned up nothing else; every markdown link and anchor across `README.md`/`CONTRIBUTING.md`/`CHANGELOG.md`/`docs/*.md`/`TASKS.md` resolves correctly.
+- Full suite (257 passed), `ruff check`/`ruff format --check`, and a from-scratch Docker rebuild + real scan against `example.com` inside the container, all re-run after every change in this phase, not just at the end.
+
+## Phase 10 — Documentation
+
 ### Documentation
 - README rewrite for the v1 architecture, corrected to accurately reflect what the native SQLi/XSS/CSRF ports do and don't cover (previously overstated: stored/DOM/CSP XSS, SQLMap integration, and CSRF's SameSite/CORS/CRLF checks are not part of the automated engine — see below).
 - Added `docs/ARCHITECTURE.md`, `docs/USER_GUIDE.md`, `CONTRIBUTING.md`, and this changelog.

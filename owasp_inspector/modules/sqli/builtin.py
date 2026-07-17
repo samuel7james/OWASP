@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import re
 import time
 import urllib.parse
@@ -8,6 +9,8 @@ import urllib.parse
 from owasp_inspector.core.http import AsyncHttpClient
 from owasp_inspector.modules.sqli.context import SqliContext
 from owasp_inspector.modules.sqli.payloads import SqliPayload
+
+logger = logging.getLogger(__name__)
 
 # Cookies that are framework/session/tracking artefacts, not user-controlled
 # query inputs — excluded from the cookie-based injection surface, same
@@ -122,7 +125,7 @@ class BuiltinSqliScanner:
         base_resp = await self.ctx.make_request(targets[0][1]["url"])
         waf_name = self.ctx.detect_waf(base_resp)
         if waf_name:
-            print(f"    [WARN] {waf_name} WAF detected. Expect many false positives or blocked requests.")
+            logger.warning("%s WAF detected. Expect many false positives or blocked requests.", waf_name)
 
         tasks = await self._build_tasks(targets)
         if not tasks:

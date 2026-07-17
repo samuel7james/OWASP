@@ -31,8 +31,17 @@ class ScanEvent:
 
 
 class Scan:
-    """Tracks a single scan run through its lifecycle for timeline reporting
-    and for resuming interrupted scans (Phase 7)."""
+    """Tracks a single scan run's state transitions for timeline reporting.
+
+    Not what powers the CLI's `--resume` flag — that reuses a cached
+    `DiscoveryResult` (see `core/discovery_cache.py`) and has nothing to do
+    with this class's PAUSED state, which no caller currently transitions
+    into. `pause`/`resume` exist as a complete, tested state machine ready
+    for a future caller (e.g. a rate-limit backoff or a manual-interrupt
+    handler) rather than as speculative/unused API that should be deleted;
+    unlike a feature deferred at a specific commit, there's no single
+    "wire this up" point to defer to.
+    """
 
     def __init__(self, scan_id: str, target_url: str):
         self.scan_id = scan_id

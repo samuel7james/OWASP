@@ -53,7 +53,7 @@ Import the new file from `owasp_inspector/modules/__init__.py` so `@register_mod
 
 - Network calls in tests go through `httpx.MockTransport`, never a real network request. Look at any `tests/test_modules_*.py` or `tests/test_*_context.py` file for the pattern: build an `AsyncHttpClient(transport=httpx.MockTransport(handler))`, where `handler` is a small function computing a response from the request.
 - Async tests are plain `async def test_...(): ...` — `pytest-asyncio` is configured in `auto` mode (`pyproject.toml`'s `[tool.pytest.ini_options]`), no `@pytest.mark.asyncio` decorator needed.
-- 257 tests across 53 files as of this writing. Coverage matters less than the next point.
+- 257 tests across 51 test files as of this writing. Coverage matters less than the next point.
 
 ### The one discipline that matters most here: prove the absence of false positives, not just the presence of true positives
 

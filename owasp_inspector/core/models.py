@@ -26,7 +26,6 @@ class ScanTarget:
 
     url: str
     cookie: str | None = None
-    credentials: dict | None = None
 
 
 @dataclass
