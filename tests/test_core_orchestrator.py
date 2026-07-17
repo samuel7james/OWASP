@@ -28,7 +28,7 @@ class _BrokenModule(Module):
         raise RuntimeError("simulated module failure")
 
 
-async def _fake_discovery(http, url, max_pages=40):
+async def _fake_discovery(http, url, max_pages=40, respect_robots=False):
     return DiscoveryResult(target_url=url, final_url=url, ok=True)
 
 
@@ -66,7 +66,7 @@ async def test_orchestrator_isolates_a_failing_module(monkeypatch, tmp_path):
 
 
 async def test_orchestrator_marks_scan_failed_on_unhandled_exception(monkeypatch, tmp_path):
-    async def _broken_discovery(http, url, max_pages=40):
+    async def _broken_discovery(http, url, max_pages=40, respect_robots=False):
         raise RuntimeError("network stack exploded")
 
     monkeypatch.setattr(orchestrator_module, "run_discovery", _broken_discovery)
@@ -95,7 +95,7 @@ async def test_orchestrator_caches_discovery_after_a_successful_scan(monkeypatch
 async def test_orchestrator_resume_skips_discovery_and_uses_cache(monkeypatch, tmp_path):
     calls = {"count": 0}
 
-    async def _counting_discovery(http, url, max_pages=40):
+    async def _counting_discovery(http, url, max_pages=40, respect_robots=False):
         calls["count"] += 1
         return DiscoveryResult(target_url=url, final_url=url, ok=True)
 
@@ -119,7 +119,7 @@ async def test_orchestrator_resume_skips_discovery_and_uses_cache(monkeypatch, t
 async def test_orchestrator_resume_falls_back_to_fresh_discovery_when_nothing_cached(monkeypatch, tmp_path):
     calls = {"count": 0}
 
-    async def _counting_discovery(http, url, max_pages=40):
+    async def _counting_discovery(http, url, max_pages=40, respect_robots=False):
         calls["count"] += 1
         return DiscoveryResult(target_url=url, final_url=url, ok=True)
 

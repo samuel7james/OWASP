@@ -12,3 +12,14 @@
 
 --- CSRF findings ---
 {'type': 'CSRF (Express.js missing token)', 'parameter': '_csrf', 'payload': 'N/A', 'evidence': 'Express.js application found, but forms are missing _csrf token. csurf middleware might be missing.', 'tool': 'framework_csrf', 'confidence': 'medium'}
+
+--- CSRF findings ---
+{'type': 'CSRF (CORS Wildcard Origin)', 'parameter': 'Origin', 'payload': 'Origin: https://evil.com', 'evidence': 'Server returns Access-Control-Allow-Origin: * (wildcard).', 'tool': 'native_csrf', 'confidence': 'low'}
+{'type': 'CSRF (Django missing token)', 'parameter': 'csrfmiddlewaretoken', 'payload': 'N/A', 'evidence': 'Django application found, but forms are missing csrfmiddlewaretoken. May be @csrf_exempt.', 'tool': 'framework_csrf', 'confidence': 'medium'}
+
+--- CSRF findings ---
+{'type': 'CSRF (CORS Wildcard Origin)', 'parameter': 'Origin', 'payload': 'Origin: https://evil.com', 'evidence': 'Server returns Access-Control-Allow-Origin: * (wildcard).', 'tool': 'native_csrf', 'confidence': 'low'}
+
+--- CSRF findings ---
+{'type': 'CSRF (CORS Wildcard Origin)', 'parameter': 'Origin', 'payload': 'Origin: https://evil.com', 'evidence': 'Server returns Access-Control-Allow-Origin: * (wildcard).', 'tool': 'native_csrf', 'confidence': 'low'}
+{'type': 'CSRF (Django missing token)', 'parameter': 'csrfmiddlewaretoken', 'payload': 'N/A', 'evidence': 'Django application found, but forms are missing csrfmiddlewaretoken. May be @csrf_exempt.', 'tool': 'framework_csrf', 'confidence': 'medium'}

@@ -41,7 +41,7 @@ def test_validate_formats_defaults_when_empty():
 
 
 def test_scan_command_writes_reports_and_exits_zero_for_good_grade(monkeypatch, tmp_path):
-    async def _fake_run_scan(url, *, profile, max_pages, resume=False):
+    async def _fake_run_scan(url, *, profile, max_pages, resume=False, respect_robots=False):
         return make_scan_result([], url=url)
 
     monkeypatch.setattr(cli_app, "run_scan", _fake_run_scan)
@@ -59,7 +59,7 @@ def test_scan_command_writes_reports_and_exits_zero_for_good_grade(monkeypatch, 
 
 
 def test_scan_command_exits_nonzero_for_bad_grade(monkeypatch, tmp_path):
-    async def _fake_run_scan(url, *, profile, max_pages, resume=False):
+    async def _fake_run_scan(url, *, profile, max_pages, resume=False, respect_robots=False):
         from owasp_inspector.core.models import Confidence, Severity
 
         return make_scan_result(

@@ -48,6 +48,7 @@ owasp-inspector https://target.com --resume   # reuse cached discovery instead o
 | `--output-dir, -o` | Where reports are written (default `Data/reports/`) |
 | `--yes, -y` | Skip the interactive authorization prompt (same as `OWASP_INSPECTOR_AUTHORIZED=1`) |
 | `--resume` | Reuse the cached discovery result for this exact URL (if one completed in the last hour) instead of re-crawling. Only the discovery phase is cached — modules always run fresh, since they have no persisted internal progress to resume from. |
+| `--respect-robots` | Honor `robots.txt` `Disallow` rules during the crawl. **Off by default** — robots.txt is a crawler-politeness convention for search engines, not access control, and this only runs after you've confirmed authorization. A real authorized test target with `Disallow: /` in its robots.txt otherwise blinds the crawl entirely. |
 
 Copy `.env.example` to `.env` to configure optional Postgres reporting, HTTP tuning, and CSRF authenticated-scan credentials — every value is optional and the scanner works with none of it set.
 

@@ -13,9 +13,16 @@ from owasp_inspector.discovery.target import probe_target
 from owasp_inspector.discovery.tls import inspect_tls
 
 
-async def run_discovery(http: AsyncHttpClient, url: str, *, max_pages: int = 40) -> DiscoveryResult:
+async def run_discovery(
+    http: AsyncHttpClient, url: str, *, max_pages: int = 40, respect_robots: bool = False
+) -> DiscoveryResult:
     """Single entry point that replaces per-module discovery: probe, fingerprint,
-    TLS/robots/sitemap collection, and one shared crawl, all in one pass."""
+    TLS/robots/sitemap collection, and one shared crawl, all in one pass.
+
+    `respect_robots` defaults to False — see crawl()'s docstring for why: this
+    only ever runs on a target the authorization gate already approved, and
+    robots.txt is a crawler-politeness convention, not an access boundary.
+    """
     probe = await probe_target(http, url)
     if not probe.ok:
         return DiscoveryResult(target_url=url, final_url=probe.final_url, ok=False, status_code=None)
@@ -30,7 +37,9 @@ async def run_discovery(http: AsyncHttpClient, url: str, *, max_pages: int = 40)
     )
 
     sitemap_urls = await fetch_sitemap(http, final_url, sitemap_hints=robots.sitemap_urls)
-    crawled_urls, targets = await crawl(http, final_url, max_pages=max_pages, robots=robots)
+    crawled_urls, targets = await crawl(
+        http, final_url, max_pages=max_pages, robots=robots, respect_robots=respect_robots
+    )
 
     return DiscoveryResult(
         target_url=url,

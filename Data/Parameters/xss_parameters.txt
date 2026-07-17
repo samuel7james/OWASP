@@ -1,0 +1,2 @@
+POST|https://pentest-ground.com:81/login|username=*&password=*&remember_me=*|username,password,remember_me|https://pentest-ground.com:81/login
+COOKIE|https://pentest-ground.com:81/|SessionID=*|SessionID

@@ -50,7 +50,7 @@ async def test_crawl_stays_same_origin_and_skips_static_assets():
     assert not any(url.endswith(".png") for url in crawled)
 
 
-async def test_crawl_respects_robots_disallow():
+def _robots_disallowing_admin() -> RobotsInfo:
     robots = RobotsInfo(fetched=True, disallowed_paths=["/admin/"])
 
     class _Parser:
@@ -58,9 +58,25 @@ async def test_crawl_respects_robots_disallow():
             return "/admin/" not in url
 
     robots.parser = _Parser()
+    return robots
 
+
+async def test_crawl_ignores_robots_disallow_by_default():
+    # A real authorized-test target was found with `Disallow: /` in robots.txt
+    # during Phase 8 verification — respecting it by default silently blinded
+    # the crawl entirely. robots.txt is a crawler-politeness convention, not
+    # an access boundary, and this only runs after the authorization gate.
     async with AsyncHttpClient(transport=httpx.MockTransport(_handler)) as http:
-        crawled, _ = await crawl(http, "https://example.com/", max_pages=10, robots=robots)
+        crawled, _ = await crawl(http, "https://example.com/", max_pages=10, robots=_robots_disallowing_admin())
+
+    assert any("/admin/panel" in url for url in crawled)
+
+
+async def test_crawl_respects_robots_disallow_when_explicitly_requested():
+    async with AsyncHttpClient(transport=httpx.MockTransport(_handler)) as http:
+        crawled, _ = await crawl(
+            http, "https://example.com/", max_pages=10, robots=_robots_disallowing_admin(), respect_robots=True
+        )
 
     assert not any("/admin/panel" in url for url in crawled)
 

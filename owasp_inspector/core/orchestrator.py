@@ -37,6 +37,7 @@ async def run_scan(
     registry: ModuleRegistry | None = None,
     resume: bool = False,
     discovery_cache: DiscoveryCache | None = None,
+    respect_robots: bool = False,
 ) -> ScanResult:
     """Run discovery once, then every registered module against that same
     result, concurrently. This is the single entry point Phase 7's CLI calls
@@ -48,6 +49,11 @@ async def run_scan(
     the genuinely expensive, independently-re-runnable phase. It does not
     checkpoint progress inside a module; modules have no persisted internal
     state to resume from.
+
+    `respect_robots=False` by default: robots.txt is a crawler-politeness
+    convention, not an access-control mechanism, and this only ever runs
+    after the authorization gate already confirmed the scan is permitted —
+    see crawl()'s docstring for the live-target case that motivated this.
     """
     configure_logging()
     scan_profile = get_profile(profile)
@@ -68,7 +74,7 @@ async def run_scan(
             discovery = cache.load(url) if resume else None
             resumed = discovery is not None
             if discovery is None:
-                discovery = await run_discovery(http, url, max_pages=max_pages)
+                discovery = await run_discovery(http, url, max_pages=max_pages, respect_robots=respect_robots)
                 if discovery.ok:
                     cache.save(url, discovery)
             scan.history[-1].detail = "resumed from cached discovery" if resumed else None

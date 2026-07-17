@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import urllib.parse
 
 from bs4 import BeautifulSoup
@@ -55,46 +56,88 @@ def _extract_links(html: str, page_url: str) -> list[str]:
     return links
 
 
+def _filter_wave(
+    urls: list[str], *, origin_netloc: str, robots: RobotsInfo | None, respect_robots: bool, budget: int
+) -> list[str]:
+    """Same-origin/crawlable URLs from this wave, capped to the remaining
+    page budget, so a wave never fetches more than needed."""
+    wave: list[str] = []
+    for url in urls:
+        if len(wave) >= budget:
+            break
+        if not _same_origin(url, origin_netloc) or not _is_crawlable(url):
+            continue
+        if respect_robots and robots is not None and not robots.allows(url):
+            continue
+        wave.append(url)
+    return wave
+
+
 async def crawl(
-    http: AsyncHttpClient, start_url: str, *, max_pages: int = 40, robots: RobotsInfo | None = None
+    http: AsyncHttpClient,
+    start_url: str,
+    *,
+    max_pages: int = 40,
+    robots: RobotsInfo | None = None,
+    respect_robots: bool = False,
 ) -> tuple[list[str], list[ParamTarget]]:
     """Breadth-first, same-origin crawl producing every GET/POST parameter target found.
 
     This is the single shared crawl every assessment module (Phase 5) reads from,
     replacing the legacy design where each scanner (SQLi/XSS/CSRF) crawled the
     target independently and multiplied request volume for no benefit.
+
+    Fetches each BFS wave (all same-depth pages) concurrently rather than one
+    page at a time — actual concurrency is still bounded by AsyncHttpClient's
+    own semaphore, so this is purely "stop waiting on page N+1 until page N's
+    response arrives" with no change to how many requests are in flight at once.
+
+    `respect_robots` defaults to False: robots.txt is a crawler-politeness
+    convention for search engines, not an access-control mechanism, and this
+    engine only ever runs after the authorization gate already confirmed the
+    scan is permitted. A real live-authorized-test target was found during
+    Phase 8 verification with `Disallow: /` in its robots.txt — respecting
+    it by default silently blinded the entire crawl on an already-authorized
+    target. Set `respect_robots=True` for a more conservative/stealth run.
     """
     origin_netloc = urllib.parse.urlparse(start_url).netloc
-    seen: set[str] = set()
-    queue: list[str] = [start_url]
+    seen: set[str] = {start_url}
+    frontier: list[str] = [start_url]
     crawled: list[str] = []
     targets: list[ParamTarget] = []
 
-    while queue and len(crawled) < max_pages:
-        url = queue.pop(0)
-        if url in seen:
-            continue
-        seen.add(url)
-
-        if not _same_origin(url, origin_netloc) or not _is_crawlable(url):
-            continue
-        if robots is not None and not robots.allows(url):
+    while frontier and len(crawled) < max_pages:
+        wave = _filter_wave(
+            frontier, origin_netloc=origin_netloc, robots=robots, respect_robots=respect_robots,
+            budget=max_pages - len(crawled),
+        )
+        frontier = []
+        if not wave:
             continue
 
-        get_target = _extract_get_target(url)
-        if get_target:
-            targets.append(get_target)
+        for url in wave:
+            get_target = _extract_get_target(url)
+            if get_target:
+                targets.append(get_target)
 
-        response = await http.get(url)
-        if response is None or "text/html" not in response.headers.get("content-type", ""):
-            continue
+        responses = await asyncio.gather(*(http.get(url) for url in wave))
 
-        final_url = str(response.url)
-        crawled.append(final_url)
-        targets.extend(_extract_forms(response.text, final_url))
+        next_frontier: list[str] = []
+        for response in responses:
+            if response is None or "text/html" not in response.headers.get("content-type", ""):
+                continue
 
-        for link in _extract_links(response.text, final_url):
-            if link not in seen:
-                queue.append(link)
+            final_url = str(response.url)
+            crawled.append(final_url)
+            targets.extend(_extract_forms(response.text, final_url))
+
+            if len(crawled) >= max_pages:
+                continue
+            for link in _extract_links(response.text, final_url):
+                if link not in seen:
+                    seen.add(link)
+                    next_frontier.append(link)
+
+        frontier = next_frontier
 
     return crawled, targets

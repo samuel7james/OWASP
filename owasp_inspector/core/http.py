@@ -63,12 +63,21 @@ class AsyncHttpClient:
         self._semaphore = asyncio.Semaphore(max_concurrency)
         self._rate_limiter = RateLimiter(min_request_interval_seconds)
         verify: bool | ssl.SSLContext = ssl.create_default_context() if verify_tls else _permissive_tls_context()
+        # Tie the connection pool to max_concurrency instead of httpx's fixed
+        # defaults (100 max / 20 keepalive regardless of profile) — a stealth
+        # scan (max_concurrency=2) has no use for 20 idle kept-alive sockets,
+        # and a fast scan benefits from the pool actually matching how many
+        # requests can be in flight at once. Keepalive connections let
+        # discovery and modules hitting the same host repeatedly reuse a
+        # TCP/TLS handshake instead of paying for a new one every request.
+        limits = httpx.Limits(max_connections=max_concurrency * 2, max_keepalive_connections=max_concurrency)
         self._client = httpx.AsyncClient(
             timeout=httpx.Timeout(timeout),
             verify=verify,
             follow_redirects=True,
             headers=headers or {},
             transport=transport,
+            limits=limits,
         )
 
     def _random_headers(self) -> dict:

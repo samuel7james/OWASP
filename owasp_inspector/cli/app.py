@@ -63,6 +63,9 @@ def scan(
     resume: bool = typer.Option(
         False, "--resume", help="Reuse the cached discovery result for this URL instead of re-crawling, if one completed within the last hour."
     ),
+    respect_robots: bool = typer.Option(
+        False, "--respect-robots", help="Honor robots.txt Disallow rules during the crawl. Off by default: robots.txt is a crawler-politeness convention, not access control, and this only runs after you've confirmed authorization."
+    ),
 ):
     """Run a fully automated OWASP Top 10 assessment against URL and write reports.
 
@@ -87,7 +90,9 @@ def scan(
 
     with console.status("Running discovery and assessment modules...", spinner="dots"):
         try:
-            result = asyncio.run(run_scan(url, profile=profile, max_pages=max_pages, resume=resume))
+            result = asyncio.run(
+                run_scan(url, profile=profile, max_pages=max_pages, resume=resume, respect_robots=respect_robots)
+            )
         except OwaspInspectorError as exc:
             console.print(f"[bold red]Scan failed:[/bold red] {exc}")
             raise typer.Exit(code=1) from None
