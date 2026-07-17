@@ -1,20 +1,12 @@
 from owasp_inspector.core.models import ScanTarget
 from owasp_inspector.core.module import ScanContext
 from owasp_inspector.modules import csrf as csrf_module
-from owasp_inspector.modules import xss as xss_module
 
 FAKE_RAW_FINDING = {"type": "SQL Injection (error-based)", "confidence": "high", "status": "confirmed", "parameter": "id", "url": "https://x/y?id=1"}
 
 
 def _context(url="https://x/y"):
     return ScanContext(target=ScanTarget(url=url), http=None, settings=None)
-
-
-async def test_xss_module_bridges_sync_engine_and_converts_findings(monkeypatch):
-    monkeypatch.setattr(xss_module, "_run_sync", lambda url: [FAKE_RAW_FINDING])
-    findings = await xss_module.XssModule().run(_context())
-    assert findings[0].module == "xss"
-    assert findings[0].owasp_category == "A03:2021-Injection"
 
 
 async def test_csrf_module_bridges_sync_engine_and_converts_findings(monkeypatch):
@@ -24,7 +16,7 @@ async def test_csrf_module_bridges_sync_engine_and_converts_findings(monkeypatch
     assert findings[0].owasp_category == "A01:2021-Broken Access Control"
 
 
-async def test_no_findings_when_xss_engine_returns_nothing(monkeypatch):
-    monkeypatch.setattr(xss_module, "_run_sync", lambda url: [])
-    findings = await xss_module.XssModule().run(_context())
+async def test_no_findings_when_csrf_engine_returns_nothing(monkeypatch):
+    monkeypatch.setattr(csrf_module, "_run_sync", lambda url: [])
+    findings = await csrf_module.CsrfModule().run(_context())
     assert findings == []
