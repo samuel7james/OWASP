@@ -8,9 +8,9 @@ owasp-inspector https://target.com
 
 No scanner selection, no manual workflow — currently covers 9 of the 10 OWASP Top 10 (2021) categories:
 
-- **A01 Broken Access Control** — CSRF (token/bypass/SameSite/CORS/CRLF checks) and a heuristic IDOR probe
+- **A01 Broken Access Control** — CSRF (missing/removable/tampered token, method-based bypasses, token-entropy analysis) and a heuristic IDOR probe
 - **A02 Cryptographic Failures** — cookies missing `Secure`, deprecated TLS versions, sensitive data in URLs, mixed-content form submission
-- **A03 Injection** — SQLi (error/union/boolean/time-based, optional SQLMap) and XSS (reflected/stored/DOM/CSP-bypass)
+- **A03 Injection** — SQLi (error-based, UNION, boolean/time-based blind, auth-bypass) and reflected XSS (context-aware payload sweep)
 - **A04 Insecure Design** — framework debug-mode/stack-trace disclosure (Django, Flask/Werkzeug, PHP, ASP.NET, Rails, raw Java/Node traces)
 - **A05 Security Misconfiguration** — missing security headers, unverifiable TLS certificates, exposed `.git`/`.env`/`.DS_Store`
 - **A06 Vulnerable and Outdated Components** — version-disclosing headers, technology fingerprinting
@@ -22,7 +22,11 @@ No scanner selection, no manual workflow — currently covers 9 of the 10 OWASP 
 
 Heuristic modules (IDOR, SSRF, and the URL-sensitive-parameter check) and anything not explicitly confirmed are clearly flagged as needing manual verification — see [Limitations](#limitations).
 
+A few specialized checks from the original engine haven't been ported into this automated flow yet — stored/DOM/CSP-bypass XSS, SQLMap integration, CSRF's SameSite/CORS/CRLF/clickjacking checks, and second-session-based CSRF bypasses. They're still available through the [legacy menu](#legacy-single-category-menu) below; see [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for what's deferred in each module and why.
+
 Use it only on systems you own or have explicit permission to test.
+
+**More docs:** [Architecture](docs/ARCHITECTURE.md) · [User Guide](docs/USER_GUIDE.md) · [Contributing](CONTRIBUTING.md) · [Changelog](CHANGELOG.md)
 
 ## Quick start
 
@@ -51,6 +55,16 @@ owasp-inspector https://target.com --resume   # reuse cached discovery instead o
 | `--respect-robots` | Honor `robots.txt` `Disallow` rules during the crawl. **Off by default** — robots.txt is a crawler-politeness convention for search engines, not access control, and this only runs after you've confirmed authorization. A real authorized test target with `Disallow: /` in its robots.txt otherwise blinds the crawl entirely. |
 
 Copy `.env.example` to `.env` to configure optional Postgres reporting, HTTP tuning, and CSRF authenticated-scan credentials — every value is optional and the scanner works with none of it set.
+
+## Docker
+
+```bash
+docker build -t owasp-inspector .
+docker run --rm -e OWASP_INSPECTOR_AUTHORIZED=1 -v "$(pwd)/reports:/app/Data/reports" \
+  owasp-inspector https://target.com --yes -o Data/reports
+```
+
+The interactive authorization prompt doesn't work in a non-interactive container, so `OWASP_INSPECTOR_AUTHORIZED=1` (or `--yes`) is required — the image never defaults this on for you. Mount a host directory over `/app/Data/reports` to get reports out of the container. See [`docs/USER_GUIDE.md`](docs/USER_GUIDE.md#docker) for the legacy-menu entry point and more detail.
 
 ## Reports
 
