@@ -28,6 +28,14 @@ Use it only on systems you own or have explicit permission to test.
 
 **More docs:** [Architecture](docs/ARCHITECTURE.md) · [User Guide](docs/USER_GUIDE.md) · [Contributing](CONTRIBUTING.md) · [Changelog](CHANGELOG.md)
 
+## Screenshots
+
+Real output from a real scan — `owasp-inspector` run against a small, deliberately-vulnerable local Flask app (unpatched SQL string concatenation, an unescaped reflected parameter, a token-less form, missing security headers) written just to produce these two images. Not a staged mockup and not a scan of anyone else's site.
+
+<p align="center"><img src="docs/screenshots/terminal.svg" alt="Terminal output of an owasp-inspector scan showing a findings-by-severity table and an F (100/100) risk grade" width="820"></p>
+
+<p align="center"><img src="docs/screenshots/html_report.png" alt="The HTML report's executive summary, risk grade, and severity breakdown" width="820"></p>
+
 ## Quick start
 
 ```bash
