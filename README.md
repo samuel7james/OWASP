@@ -30,15 +30,7 @@ Use it only on systems you own or have explicit permission to test.
 
 ## Screenshots
 
-Real output from real scans — not staged mockups.
-
-**A small, deliberately-vulnerable local Flask app** (unpatched SQL string concatenation, an unescaped reflected parameter, a token-less form, missing security headers), written just to produce these two images:
-
-<p align="center"><img src="docs/screenshots/terminal.svg" alt="Terminal output of an owasp-inspector scan showing a findings-by-severity table and an F (100/100) risk grade" width="820"></p>
-
-<p align="center"><img src="docs/screenshots/html_report.png" alt="The HTML report's executive summary, risk grade, and severity breakdown" width="820"></p>
-
-**A public DVWA (Damn Vulnerable Web Application) instance** on a legitimate, explicitly-authorized pentest-practice hosting service — a genuine internet-hosted target, not something local:
+Real output from a real scan — not a staged mockup. `owasp-inspector` run against a public DVWA (Damn Vulnerable Web Application) instance on a legitimate, explicitly-authorized pentest-practice hosting service — a genuine internet-hosted target:
 
 <p align="center"><img src="docs/screenshots/live_terminal.svg" alt="Terminal output of an owasp-inspector scan against a live DVWA instance showing 102 findings and an F (100/100) grade" width="820"></p>
 
