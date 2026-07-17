@@ -24,11 +24,13 @@ def _is_crawlable(url: str) -> bool:
 
 def _extract_get_target(url: str) -> ParamTarget | None:
     parsed = urllib.parse.urlparse(url)
-    params = list(dict.fromkeys(urllib.parse.parse_qs(parsed.query).keys()))
+    query = urllib.parse.parse_qs(parsed.query)
+    params = list(dict.fromkeys(query.keys()))
     if not params:
         return None
     clean_url = urllib.parse.urlunparse(parsed._replace(query=""))
-    return ParamTarget(method="get", url=clean_url, params=params)
+    defaults = {p: query[p][0] for p in params if query.get(p)}
+    return ParamTarget(method="get", url=clean_url, params=params, defaults=defaults)
 
 
 def _extract_forms(html: str, page_url: str) -> list[ParamTarget]:
@@ -38,11 +40,26 @@ def _extract_forms(html: str, page_url: str) -> list[ParamTarget]:
         action = form.get("action") or page_url
         method = (form.get("method") or "get").strip().lower()
         action_url = urllib.parse.urljoin(page_url, action)
-        params = list(dict.fromkeys(
-            field.get("name") for field in form.find_all(["input", "textarea", "select"]) if field.get("name")
-        ))
+        params: list[str] = []
+        defaults: dict[str, str] = {}
+        for field in form.find_all(["input", "textarea", "select"]):
+            name = field.get("name")
+            if not name:
+                continue
+            if name not in defaults:
+                params.append(name)
+            if field.name == "select":
+                selected = field.find("option", selected=True) or field.find("option")
+                defaults[name] = (selected.get("value") or selected.get_text()) if selected else ""
+            elif field.name == "textarea":
+                defaults[name] = field.get_text() or ""
+            else:
+                defaults[name] = field.get("value") or ""
+        params = list(dict.fromkeys(params))
         if params:
-            targets.append(ParamTarget(method="post" if method == "post" else "get", url=action_url, params=params))
+            targets.append(
+                ParamTarget(method="post" if method == "post" else "get", url=action_url, params=params, defaults=defaults)
+            )
     return targets
 
 

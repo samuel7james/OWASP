@@ -11,13 +11,15 @@ PAGES = {
             <a href="/admin/panel">admin</a>
             <a href="https://other-site.com/x">offsite</a>
             <a href="/logo.png">logo</a>
+            <a href="/profile?id=5">profile</a>
             <form action="/login" method="post">
-                <input name="username"><input name="password">
+                <input name="username" value="guest"><input name="password">
             </form>
         </body></html>
     """,
     "/search": "<html><body>results page, no links</body></html>",
     "/admin/panel": "<html><body>secret admin</body></html>",
+    "/profile": "<html><body>no links, has query</body></html>",
 }
 
 
@@ -40,6 +42,18 @@ async def test_crawl_discovers_get_and_post_targets():
         t.url == "https://example.com/login" and set(t.params) == {"username", "password"}
         for t in post_targets
     )
+
+
+async def test_crawl_captures_default_values_for_get_and_form_targets():
+    async with AsyncHttpClient(transport=httpx.MockTransport(_handler)) as http:
+        _, targets = await crawl(http, "https://example.com/", max_pages=10)
+
+    profile_target = next(t for t in targets if t.url == "https://example.com/profile")
+    assert profile_target.defaults == {"id": "5"}
+
+    login_target = next(t for t in targets if t.url == "https://example.com/login")
+    assert login_target.defaults.get("username") == "guest"
+    assert login_target.defaults.get("password") == ""
 
 
 async def test_crawl_stays_same_origin_and_skips_static_assets():

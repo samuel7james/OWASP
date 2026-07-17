@@ -48,6 +48,7 @@ class ParamTarget:
     method: Literal["get", "post"]
     url: str
     params: list[str] = field(default_factory=list)
+    defaults: dict[str, str] = field(default_factory=dict)
 
 
 @dataclass
