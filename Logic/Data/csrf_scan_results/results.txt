@@ -1,3 +1,0 @@
-
---- CSRF findings ---
-{'type': 'CSRF (Express.js missing token)', 'parameter': '_csrf', 'payload': 'N/A', 'evidence': 'Express.js application found, but forms are missing _csrf token. csurf middleware might be missing.', 'tool': 'framework_csrf', 'confidence': 'medium'}

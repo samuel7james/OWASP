@@ -21,8 +21,6 @@ pytest --cov=owasp_inspector --cov-report=term-missing   # with coverage
 
 CI (`.github/workflows/ci.yml`) runs all of this plus CodeQL, Semgrep, `pip-audit`, a gitleaks secret scan, and a Docker build + Trivy scan on every PR — matching these locally before pushing saves a round-trip.
 
-`Logic/`, `UI/`, `Data/Queries/`, and `main.py` are excluded from `ruff` (see the comment in `pyproject.toml`'s `[tool.ruff]` section) — they're the pre-v1 legacy engine, a flat module layout with a structural reason for import-order lint violations that isn't worth a real refactor to satisfy a linter. Don't extend that exclusion to anything under `owasp_inspector/`; that package is held to full lint on purpose.
-
 ## Where things live
 
 New OWASP-category checks, HTTP/discovery behavior, reporting, and the CLI all live under `owasp_inspector/` — see [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the full layout and the extension points. Read that before adding a module; the short version:
@@ -53,7 +51,7 @@ Import the new file from `owasp_inspector/modules/__init__.py` so `@register_mod
 
 - Network calls in tests go through `httpx.MockTransport`, never a real network request. Look at any `tests/test_modules_*.py` or `tests/test_*_context.py` file for the pattern: build an `AsyncHttpClient(transport=httpx.MockTransport(handler))`, where `handler` is a small function computing a response from the request.
 - Async tests are plain `async def test_...(): ...` — `pytest-asyncio` is configured in `auto` mode (`pyproject.toml`'s `[tool.pytest.ini_options]`), no `@pytest.mark.asyncio` decorator needed.
-- 257 tests across 51 test files as of this writing. Coverage matters less than the next point.
+- 240 tests across 49 test files as of this writing. Coverage matters less than the next point.
 
 ### The one discipline that matters most here: prove the absence of false positives, not just the presence of true positives
 
@@ -63,7 +61,7 @@ This project's core lesson, learned three times over during the SQLi/XSS/CSRF as
 - XSS's dangerous-construct check treated a marker like `"alert("` as proof a payload survived unescaped — but that substring contains no HTML metacharacters, so it's present as harmless text even when the server fully HTML-escapes the payload.
 - CSRF's success classifier only checked a baseline for 2 of 15 bypass tests; a page with static "success"-flavored boilerplate text misread as a working bypass on the other 13.
 
-When you add or modify a detection check, add a test that proves it does **not** fire on the case that looks similar but isn't real — an already-present error message, an escaped/neutralized payload, a static string that happens to match your success pattern. If you're porting or touching heuristic logic from `Logic/`, read it looking specifically for this shape of bug before trusting it; don't assume it's correct just because it's already shipping.
+When you add or modify a detection check, add a test that proves it does **not** fire on the case that looks similar but isn't real — an already-present error message, an escaped/neutralized payload, a static string that happens to match your success pattern. Read existing heuristic logic looking specifically for this shape of bug before trusting it; don't assume it's correct just because it's already shipping.
 
 ### Live verification for anything touching request/response detection logic
 
@@ -72,7 +70,7 @@ Mocked tests catch logic bugs; they can't catch "this assumption about how a rea
 ## Commit and PR conventions
 
 - Keep commits scoped: a false-positive fix, a new module, and a docs update are three commits, not one, even in the same session.
-- If you generated or modified anything under `owasp_inspector/modules/` for a legacy-engine port, state in the PR description what was ported faithfully, what was deliberately deferred (and why), and what was verified live versus only mocked — see any of the SQLi/XSS/CSRF port sections in [`TASKS.md`](TASKS.md) for the expected shape of that writeup.
+- If you extend the scope of what SQLi/XSS/CSRF cover, state in the PR description what's newly covered, what's deliberately still out of scope (and why), and what was verified live versus only mocked.
 - Don't claim something is "done" or "verified" if it was only reviewed as text. If you can't actually run it (no Docker available, no live target reachable), say so explicitly rather than asserting success.
 
 ## Reporting security issues in this tool itself

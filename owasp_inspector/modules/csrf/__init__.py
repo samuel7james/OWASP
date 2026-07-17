@@ -6,7 +6,7 @@ from owasp_inspector.core.http import AsyncHttpClient
 from owasp_inspector.core.models import Finding
 from owasp_inspector.core.module import Module, ScanContext
 from owasp_inspector.core.registry import register_module
-from owasp_inspector.modules._legacy_common import convert_legacy_finding
+from owasp_inspector.modules._raw_finding import finding_from_raw
 from owasp_inspector.modules.csrf import bypass_tests as bypass_tests_module
 from owasp_inspector.modules.csrf.bypass_tests import CORE_BYPASS_TESTS, test_no_token_defense, test_token_entropy
 from owasp_inspector.modules.csrf.context import DEFAULT_TOKEN_NAMES, CsrfContext
@@ -70,27 +70,25 @@ _METHOD_AGNOSTIC_TESTS = (
 
 @register_module
 class CsrfModule(Module):
-    """Native async port of the core CSRF bypass-detection path: token
+    """Native async CSRF bypass-detection module: token
     presence/removal/tampering, method-based bypasses, and token-entropy
     analysis. Categorized under A01 (Broken Access Control) — the OWASP
     2021 Top 10 dropped CSRF as its own category and community guidance
     places it there, since it's fundamentally a failure to enforce
     authorization on a state-changing request.
 
-    Ported faithfully from Logic/vulnerability_scan/csrf/bypass_strategies.py
-    (10 of its 15 form-level tests — see bypass_tests.py's module docstring
-    for what's deferred and why), with one deliberate fix: every ported test
-    now fetches and checks against a baseline response, where the legacy
-    engine only did this for 2 of the 15. See context.py's
-    `is_action_successful` docstring for the false-positive this closes.
+    Implements 10 of the classic form-level bypass categories (see
+    bypass_tests.py's module docstring for what's out of scope and why),
+    with every test fetching and checking against a baseline response
+    before confirming a bypass — see context.py's `is_action_successful`
+    docstring for the false-positive class that guards against.
 
-    Not yet ported: the `Authenticator` login flow (and the two bypass
-    tests that depend on a second authenticated session), `GlobalStrategies`
-    (SameSite/Referer/CORS/CRLF/clickjacking/token-leakage checks — a
-    substantially larger, more specialized subsystem in its own right), and
-    `PoCGenerator` (writes exploit HTML to disk — an artifact-generation
-    side effect, not detection logic). All remain available via
-    `owasp-inspector-legacy-menu`.
+    Not covered: an authenticated-login flow (and the two bypass tests
+    that depend on a second authenticated session), broader
+    SameSite/Referer/CORS/CRLF/clickjacking/token-leakage checks — a
+    substantially larger, more specialized subsystem in its own right —
+    and generating exploit-PoC HTML (an artifact-generation feature, not
+    detection logic).
     """
 
     name = "csrf"
@@ -136,8 +134,6 @@ class CsrfModule(Module):
 
         raw_findings = [f for results in all_results for f in results]
         return [
-            convert_legacy_finding(
-                f, module=self.name, owasp_category=self.owasp_category, target_url=discovery.final_url
-            )
+            finding_from_raw(f, module=self.name, owasp_category=self.owasp_category, target_url=discovery.final_url)
             for f in raw_findings
         ]

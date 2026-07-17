@@ -1,6 +1,7 @@
 import httpx
 
 import owasp_inspector.modules.sqli as sqli_module
+from owasp_inspector.core.config import Settings
 from owasp_inspector.core.http import AsyncHttpClient
 from owasp_inspector.core.models import ScanTarget
 from owasp_inspector.core.module import ScanContext
@@ -71,6 +72,47 @@ async def test_sqli_module_finds_error_based_vuln_end_to_end(monkeypatch):
     assert any("Error Pattern Match" in f.title for f in findings)
     assert all(f.module == "sqli" for f in findings)
     assert all(f.owasp_category == "A03:2021-Injection" for f in findings)
+
+
+async def test_sqli_module_honors_probe_all_cookies_setting(monkeypatch):
+    # Regression: SCAN_SQLI_PROBE_ALL_COOKIES was defined in Settings but
+    # never actually read — the module always called _cookie_targets with
+    # probe_all hardcoded to False, so the setting did nothing.
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, text="<html>ok</html>")
+
+    def _fake_client(*, max_concurrency, timeout, max_retries):
+        return AsyncHttpClient(
+            max_concurrency=max_concurrency,
+            max_retries=max_retries,
+            timeout=5.0,
+            transport=httpx.MockTransport(handler),
+        )
+
+    monkeypatch.setattr(sqli_module, "AsyncHttpClient", _fake_client)
+    seen_probe_all = []
+    real_cookie_targets = sqli_module._cookie_targets
+    monkeypatch.setattr(
+        sqli_module,
+        "_cookie_targets",
+        lambda discovery, probe_all: (seen_probe_all.append(probe_all), real_cookie_targets(discovery, probe_all))[1],
+    )
+
+    discovery = DiscoveryResult(
+        target_url="https://x/",
+        final_url="https://x/",
+        ok=True,
+        targets=[ParamTarget(method="get", url="https://x/item", params=["id"], defaults={"id": "1"})],
+        cookies={"_ga": "abc"},
+    )
+    context = ScanContext(
+        target=ScanTarget(url="https://x/"),
+        http=None,
+        settings=Settings(scan_sqli_probe_all_cookies=True),
+        discovery=discovery,
+    )
+    await SqliModule().run(context)
+    assert seen_probe_all == [True]
 
 
 async def test_sqli_module_returns_empty_when_discovery_failed():

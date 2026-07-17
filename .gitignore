@@ -13,11 +13,6 @@ dist/
 htmlcov/
 
 # Scan output artifacts — generated at run time, not source
-Data/sqli_scan_results/
-Data/xss_scan_results/
-Data/csrf_scan_results/
-Data/Parameters/
 Data/reports/
 Data/scan_history/
 Data/scan_cache/
-Logic/Data/

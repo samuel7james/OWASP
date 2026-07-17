@@ -22,19 +22,27 @@ No scanner selection, no manual workflow — currently covers 9 of the 10 OWASP 
 
 Heuristic modules (IDOR, SSRF, and the URL-sensitive-parameter check) and anything not explicitly confirmed are clearly flagged as needing manual verification — see [Limitations](#limitations).
 
-A few specialized checks from the original engine haven't been ported into this automated flow yet — stored/DOM/CSP-bypass XSS, SQLMap integration, CSRF's SameSite/CORS/CRLF/clickjacking checks, and second-session-based CSRF bypasses. They're still available through the [legacy menu](#legacy-single-category-menu) below; see [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for what's deferred in each module and why.
+A few specialized checks aren't covered: stored/DOM/CSP-bypass XSS, SQLMap integration, CSRF's SameSite/CORS/CRLF/clickjacking checks, and second-session-based CSRF bypasses. See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for what's out of scope for each module and why.
 
 Use it only on systems you own or have explicit permission to test.
 
-**More docs:** [Architecture](docs/ARCHITECTURE.md) · [User Guide](docs/USER_GUIDE.md) · [Contributing](CONTRIBUTING.md) · [Changelog](CHANGELOG.md)
+**More docs:** [Architecture](docs/ARCHITECTURE.md) · [User Guide](docs/USER_GUIDE.md) · [Contributing](CONTRIBUTING.md)
 
 ## Screenshots
 
-Real output from a real scan — `owasp-inspector` run against a small, deliberately-vulnerable local Flask app (unpatched SQL string concatenation, an unescaped reflected parameter, a token-less form, missing security headers) written just to produce these two images. Not a staged mockup and not a scan of anyone else's site.
+Real output from real scans — not staged mockups.
+
+**A small, deliberately-vulnerable local Flask app** (unpatched SQL string concatenation, an unescaped reflected parameter, a token-less form, missing security headers), written just to produce these two images:
 
 <p align="center"><img src="docs/screenshots/terminal.svg" alt="Terminal output of an owasp-inspector scan showing a findings-by-severity table and an F (100/100) risk grade" width="820"></p>
 
 <p align="center"><img src="docs/screenshots/html_report.png" alt="The HTML report's executive summary, risk grade, and severity breakdown" width="820"></p>
+
+**A public DVWA (Damn Vulnerable Web Application) instance** on a legitimate, explicitly-authorized pentest-practice hosting service — a genuine internet-hosted target, not something local:
+
+<p align="center"><img src="docs/screenshots/live_terminal.svg" alt="Terminal output of an owasp-inspector scan against a live DVWA instance showing 102 findings and an F (100/100) grade" width="820"></p>
+
+<p align="center"><img src="docs/screenshots/live_report.png" alt="The HTML report for the live DVWA scan, showing 102 findings across multiple OWASP categories with an 82.8s scan duration" width="820"></p>
 
 ## Quick start
 
@@ -62,7 +70,7 @@ owasp-inspector https://target.com --resume   # reuse cached discovery instead o
 | `--resume` | Reuse the cached discovery result for this exact URL (if one completed in the last hour) instead of re-crawling. Only the discovery phase is cached — modules always run fresh, since they have no persisted internal progress to resume from. |
 | `--respect-robots` | Honor `robots.txt` `Disallow` rules during the crawl. **Off by default** — robots.txt is a crawler-politeness convention for search engines, not access control, and this only runs after you've confirmed authorization. A real authorized test target with `Disallow: /` in its robots.txt otherwise blinds the crawl entirely. |
 
-Copy `.env.example` to `.env` to configure optional Postgres reporting, HTTP tuning, and CSRF authenticated-scan credentials — every value is optional and the scanner works with none of it set.
+Copy `.env.example` to `.env` to tune SQLi/XSS/CSRF module concurrency — optional, the scanner works with none of it set.
 
 ## Docker
 
@@ -72,65 +80,13 @@ docker run --rm -e OWASP_INSPECTOR_AUTHORIZED=1 -v "$(pwd)/reports:/app/Data/rep
   owasp-inspector https://target.com --yes -o Data/reports
 ```
 
-The interactive authorization prompt doesn't work in a non-interactive container, so `OWASP_INSPECTOR_AUTHORIZED=1` (or `--yes`) is required — the image never defaults this on for you. Mount a host directory over `/app/Data/reports` to get reports out of the container. See [`docs/USER_GUIDE.md`](docs/USER_GUIDE.md#docker) for the legacy-menu entry point and more detail.
+The interactive authorization prompt doesn't work in a non-interactive container, so `OWASP_INSPECTOR_AUTHORIZED=1` (or `--yes`) is required — the image never defaults this on for you. Mount a host directory over `/app/Data/reports` to get reports out of the container.
 
 ## Reports
 
 Each scan produces a `ReportData` covering an executive summary, an overall risk grade (A–F, severity-weighted and confidence-discounted so a pile of low-confidence heuristic candidates can't outweigh one confirmed critical), findings grouped by OWASP category with evidence/remediation/references, technology and TLS/header discovery summary, and a scan timeline. Every finding that isn't a `confirmed` result is explicitly marked as needing manual verification.
 
 `owasp-inspector history` lists past scans (target, grade, score, finding count) from a local append-only record — no database required.
-
-## Legacy: single-category menu
-
-The original menu-driven, single-vulnerability-class scanner is still available under a different command, unaffected by the automated engine above:
-
-```bash
-owasp-inspector-legacy-menu
-```
-
-```
-1) SQLi scan
-2) XSS scan
-3) CSRF scan
-4) Exit
-```
-
-**Use a page with inputs**, not a site homepage. Good test URLs:
-
-```
-https://demo.testfire.net/search.jsp?query=test
-https://demo.testfire.net/login.jsp
-```
-
-Each scanner can also be run directly:
-
-```bash
-python UI/sqli_scan.py https://example.com/page?id=1
-python UI/xss_scan.py https://example.com/search?q=test
-python UI/csrf_scan.py https://example.com/account
-```
-
-All of these also require the authorization confirmation (or `OWASP_INSPECTOR_AUTHORIZED=1`) before scanning.
-
-## Optional tools and settings
-
-| Tool / setting | Purpose |
-|----------------|---------|
-| **sqlmap** | Deeper SQLi confirmation when enabled in the SQLi module |
-| **PostgreSQL** | Stores scan metadata and reports for the legacy menu (optional; scans work without it) |
-| `SCAN_HTTP_TIMEOUT=30` | HTTP timeout in seconds for slow targets |
-
-Create a `.env` file in the project root to configure the database:
-
-```env
-DB_HOST=localhost
-DB_DATABASE=vulnerability_scanner
-DB_USER=postgres
-DB_PASSWORD=your_password
-DB_PORT=5432
-```
-
-If PostgreSQL is not running, the legacy menu still works — you will see a brief connection notice and results remain in the terminal and log files. (The automated `owasp-inspector <url>` engine doesn't use Postgres at all — its reports and history are files.)
 
 ## Limitations
 

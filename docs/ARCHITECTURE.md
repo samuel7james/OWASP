@@ -1,6 +1,6 @@
 # Architecture
 
-This document describes how OWASP Inspector v1 (`owasp_inspector/`) is put together: the layers, the extension points, and the design decisions that would otherwise only live in commit messages. It does not cover the legacy menu-driven engine (`Logic/`, `UI/`, `main.py`) beyond how it coexists with v1 — see [Legacy engine](#legacy-engine) at the end.
+This document describes how OWASP Inspector (`owasp_inspector/`) is put together: the layers, the extension points, and the design decisions that would otherwise only live in commit messages.
 
 ## The one-line summary
 
@@ -71,7 +71,7 @@ Three fixed profiles control concurrency/timeout/retries/pacing: `fast` (20 conc
 
 ### Settings (`core/config.py`)
 
-A single `pydantic_settings.BaseSettings` subclass, loaded from `.env` if present, `extra="ignore"` (unknown env vars don't break anything). Every field has a safe default — the scanner runs with zero configuration. See `.env.example` for the full list.
+A single `pydantic_settings.BaseSettings` subclass, loaded from `.env` if present, `extra="ignore"` (unknown env vars don't break anything). Deliberately small: only `scan_sqli_workers` (SQLi/XSS/CSRF module concurrency) and `scan_sqli_probe_all_cookies` (whether to also test session/tracking cookies normally excluded by denylist) are actually read anywhere — everything else about a scan's behavior (concurrency, timeout, retries, request pacing) is controlled per-run via `--profile`, not env vars. Both fields have safe defaults — the scanner runs with zero configuration.
 
 ## Discovery (`discovery/`)
 
@@ -123,23 +123,23 @@ Eleven modules cover nine of the ten OWASP Top 10 (2021) categories (A09 — Log
 
 "Deterministic" here means the check reads a flag that's either present or not (a missing header, a cookie without `Secure`) — reported as `confirmed`. "Heuristic" means a single signal that's suggestive but not conclusive on its own (IDOR would need a second authenticated identity to be sure; SSRF would need out-of-band callback infrastructure this engine doesn't run) — always flagged as needing manual verification.
 
-### SQLi, XSS, CSRF: what's native, what's deferred
+### SQLi, XSS, CSRF: what's covered, what isn't
 
-These three started as thin `asyncio.to_thread` bridges around the pre-v1 synchronous engine (`Logic/vulnerability_scan/{sqli,xss,csrf}/`). Each has since been ported to native async — but as a **faithful port of the primary detection path**, not a full 1:1 rewrite of every legacy feature. Each module's own docstring is the authoritative list of what's deferred; the summary:
+Each of these three modules implements a **faithful, complete port of one primary detection path**, not every technique a specialized standalone scanner might include. Each module's own docstring is the authoritative list of what's out of scope; the summary:
 
-- **`sqli/`** — every check in `Logic/vulnerability_scan/sqli/scanners/builtin.py` (error-pattern, UNION reflection/column-count, time-based with control-verification, auth-bypass, size-diff, boolean-toggle) is ported. **Not ported**: the cookie-based blind conditional-error extraction solver and the SQLMap integration (`scanners/{blind,sqlmap}.py`).
-- **`xss/`** — the reflected-XSS scanner (`scanners/reflected.py`): standard payload sweep plus a context-aware follow-up pass that picks JS-string/event-handler/attribute-breakout payloads based on where an injected canary landed. **Not ported**: Stored XSS, DOM XSS, CSP-bypass, and WAF-evasion scanning (`scanners/{stored,dom,csp,waf}.py`) — each a substantially larger, more specialized engine than reflected XSS.
-- **`csrf/`** — 10 of 15 form-level bypass tests from `bypass_strategies.py` (no-token, remove-token, empty-token, method-switch, both method-overrides, header-override, tampered-token, content-type-switch, token-entropy). **Not ported**: the two tests needing a second authenticated session (`CrossSessionTokenTest`, `NonSessionCookieTokenTest` — the legacy `Authenticator`'s login flow assumes a fixed `/login` path unrelated to this engine's discovery-driven design), the two needing a real state-changing action performed twice (`TokenReuseTest`, `CustomHeaderBypassTest`), `GlobalStrategies` (SameSite/Referer/CORS/CRLF/clickjacking/token-leakage checks — a substantially larger, more specialized subsystem), and `PoCGenerator` (writes exploit HTML to disk).
+- **`sqli/`** — error-pattern, UNION reflection/column-count, time-based with control-verification, auth-bypass, size-diff, and boolean-toggle detection. **Not covered**: a cookie-based blind conditional-error extraction solver, and SQLMap integration.
+- **`xss/`** — reflected XSS: a standard payload sweep plus a context-aware follow-up pass that picks JS-string/event-handler/attribute-breakout payloads based on where an injected canary landed. **Not covered**: Stored XSS, DOM XSS, CSP-bypass, and WAF-evasion scanning — each a substantially larger, more specialized engine than reflected XSS.
+- **`csrf/`** — 10 form-level bypass tests: no-token, remove-token, empty-token, method-switch, both method-overrides, header-override, tampered-token, content-type-switch, token-entropy. **Not covered**: bypasses needing a second authenticated session or login flow, bypasses requiring a real state-changing action performed twice in sequence, and broader SameSite/Referer/CORS/CRLF/clickjacking/token-leakage checks — each a substantially larger, more specialized subsystem than the token-validation bypasses above.
 
-All deferred functionality remains reachable via `owasp-inspector-legacy-menu`.
+None of the above is a temporary gap being tracked toward completion — it's the deliberate boundary of what each module does. Extending any of them is a real feature-scoping exercise, not a mechanical addition.
 
 ### The false-positive-by-missing-baseline-comparison lesson
 
-Across all three ports, the single most valuable audit turned out to be the same question asked of every detection check: **does this check verify that the payload actually caused the signal, or does it just check that the signal is present?** A check that does the latter will eventually flag something that was already true before the payload was ever sent. Concretely:
+Building these three modules, the single most valuable audit turned out to be the same question asked of every detection check: **does this check verify that the payload actually caused the signal, or does it just check that the signal is present?** A check that does the latter will eventually flag something that was already true before the payload was ever sent. Concretely:
 
 - SQLi's error-pattern check didn't compare against a baseline (pre-payload) response — on a target with an already-broken backend (a database table that doesn't exist), *every* payload against *any* parameter "matched" the same pre-existing fatal error. Found via a live DVWA test where 30+ identical false positives on an unrelated `Submit` parameter drowned out the 12 genuine findings on the actual vulnerable parameter.
 - XSS's dangerous-construct check treated markers like `"alert("` as proof a payload survived — but that substring contains no HTML metacharacters, so it's present as inert text even when the server fully HTML-escapes the payload. A generic "bare canary reflected somewhere" payload type also bypassed the whole exact-match/dangerous-survival gate.
-- CSRF's classifier only fetched a baseline for 2 of the legacy engine's 15 bypass tests — a page with static "success"-flavored boilerplate would misread as a working bypass on the other 13.
+- CSRF's classifier initially only fetched a baseline for 2 of 15 bypass tests — a page with static "success"-flavored boilerplate would misread as a working bypass on the other 13.
 
 If you're adding a new detection check, ask this question before writing the check, not after finding the false positive.
 
@@ -155,8 +155,4 @@ Renderers (`renderers/`) are independent: `json_renderer.py` and the dataclass-t
 
 ## CLI (`cli/`)
 
-Typer + Rich. `owasp-inspector <url>` is `scan` with the URL as the only required argument — profile/format/output-dir/max-pages/resume/respect-robots are all optional. `owasp-inspector history` reads a local append-only JSON record of past scans (target, grade, score, finding count) — no database required for this; Postgres (if configured) is only used by the legacy menu.
-
-## Legacy engine
-
-`Logic/`, `UI/`, and `main.py` are the pre-v1 engine: flat modules (not a real installable package) that resolve their own imports via a `sys.path` shim in `main.py`, reachable through the `owasp-inspector-legacy-menu` console script or by running `python UI/{sqli,xss,csrf}_scan.py <url>` directly. It's kept around deliberately, not as dead weight: it's where every deferred feature listed above still lives, and it's a separate, independent code path from `owasp_inspector/` — a bug in one cannot silently affect the other. `pyproject.toml`'s `[tool.ruff] exclude` and this repo's CI intentionally don't hold it to the same lint standard as `owasp_inspector/`; see the comment there for why.
+Typer + Rich. `owasp-inspector <url>` is `scan` with the URL as the only required argument — profile/format/output-dir/max-pages/resume/respect-robots are all optional. `owasp-inspector history` reads a local append-only JSON record of past scans (target, grade, score, finding count) — no database required.

@@ -119,9 +119,9 @@ async def crawl(
 ) -> tuple[list[str], list[ParamTarget]]:
     """Breadth-first, same-origin crawl producing every GET/POST parameter target found.
 
-    This is the single shared crawl every assessment module (Phase 5) reads from,
-    replacing the legacy design where each scanner (SQLi/XSS/CSRF) crawled the
-    target independently and multiplied request volume for no benefit.
+    This is the single shared crawl every assessment module reads from,
+    rather than each one (SQLi/XSS/CSRF and the rest) crawling the target
+    independently and multiplying request volume for no benefit.
 
     Fetches each BFS wave (all same-depth pages) concurrently rather than one
     page at a time — actual concurrency is still bounded by AsyncHttpClient's

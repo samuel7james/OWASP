@@ -16,7 +16,7 @@ Python 3.10+ is required (`pyproject.toml`'s `requires-python`). For development
 
 ## Authorization
 
-Every scan — the automated engine and the legacy menu alike — requires explicit confirmation before making a single request:
+Every scan requires explicit confirmation before making a single request:
 
 - **Interactively**: a `y/N` prompt naming the target.
 - **Non-interactively** (scripts, CI, Docker, `--yes`/`-y`): set `OWASP_INSPECTOR_AUTHORIZED=1`. There's no other way to skip the prompt — this is deliberate, so unattended runs still require someone to have made the choice explicitly.
@@ -73,7 +73,7 @@ owasp-inspector history            # list past scans (target, grade, score, find
 owasp-inspector history -n 5       # limit to the 5 most recent
 ```
 
-History is a local, append-only JSON file — no database required. (Postgres, if configured via `.env`, is only used by the legacy menu; the automated engine's reports and history are always plain files.)
+History is a local, append-only JSON file — no database required.
 
 ## Environment variables
 
@@ -81,25 +81,8 @@ Copy `.env.example` to `.env`. Every value is optional — the scanner works wit
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `DB_HOST`, `DB_DATABASE`, `DB_USER`, `DB_PASSWORD`, `DB_PORT` | `localhost` / `vulnerability_scanner` / `postgres` / *(empty)* / `5432` | Optional Postgres backing for the **legacy menu only** |
-| `SCAN_HTTP_TIMEOUT` | `30` | HTTP timeout (seconds) |
-| `SCAN_HTTP_TIMEOUT_RETRY` | `60` | Timeout used on retry attempts |
-| `SCAN_JITTER` | `0` | Random per-request delay jitter (seconds) |
-| `SCAN_CRAWL_TIMEOUT` | `10` | Per-request timeout during crawling |
-| `SCAN_CRAWL_THREADS` | `8` | Legacy crawl concurrency (menu scanners) |
-| `SCAN_CRAWL_LIMIT` | `40` | Legacy crawl page limit (use `--max-pages` for the automated engine) |
-| `SCAN_PARAM_LINK_LIMIT` | `200` | Cap on links considered for parameter extraction |
-| `SCAN_TRAINING_CRAWL_LIMIT` | `40` | Legacy crawl limit for the auth-target trainer |
-| `SCAN_RECON_TIMEOUT` | `30` | Timeout for recon/fingerprinting requests |
-| `SCAN_CONNECT_TIMEOUT`, `SCAN_PROBE_CONNECT_TIMEOUT` | `15` | Connection-establishment timeouts |
-| `SCAN_REQUEST_DELAY` | `0` | Fixed delay between requests (seconds) |
-| `SCAN_BACKOFF_SECONDS` | `0` | Base backoff for retry attempts |
-| `SCAN_PROXY` | *(empty)* | Route traffic through a proxy (e.g. Burp/ZAP) |
-| `SCAN_AUTO_PROXY` | `false` | Auto-detect a locally running proxy |
 | `SCAN_SQLI_WORKERS` | `10` | Concurrency for SQLi/XSS/CSRF modules |
 | `SCAN_SQLI_PROBE_ALL_COOKIES` | `false` | Probe every cookie for SQLi, including tracking/session cookies normally excluded |
-| `SCAN_SHOW_CANDIDATES` | `false` | Include lower-confidence candidate findings in legacy-menu output |
-| `CSRF_USER`, `CSRF_PASS`, `CSRF_USER2`, `CSRF_PASS2` | *(empty)* | Credentials for the legacy CSRF engine's authenticated/cross-session checks (`owasp-inspector-legacy-menu` only — the automated `csrf` module doesn't use these; see [Architecture](ARCHITECTURE.md#sqli-xss-csrf-whats-native-whats-deferred)) |
 
 `OWASP_INSPECTOR_AUTHORIZED` (not in `.env` — set it as a real environment variable) is the non-interactive authorization flag; see [Authorization](#authorization).
 
@@ -114,46 +97,15 @@ docker run --rm -e OWASP_INSPECTOR_AUTHORIZED=1 \
 
 The image's `ENTRYPOINT` is `owasp-inspector`, so any flag documented above works the same way. Mount a host directory over `/app/Data/reports` (or wherever you point `--output-dir`) to get reports out. The container runs as an unprivileged `scanner` user.
 
-The legacy menu is also present in the image, at a different entrypoint:
-
-```bash
-docker run --rm -it --entrypoint owasp-inspector-legacy-menu -e OWASP_INSPECTOR_AUTHORIZED=1 owasp-inspector
-```
-
-## Legacy menu
-
-The original menu-driven, single-vulnerability-class scanner (`Logic/`, `UI/`) is a separate code path, unaffected by the automated engine, and is where the deferred SQLi/XSS/CSRF functionality listed in [Architecture](ARCHITECTURE.md#sqli-xss-csrf-whats-native-whats-deferred) still lives:
-
-```bash
-owasp-inspector-legacy-menu
-```
-
-```text
-1) SQLi scan
-2) XSS scan
-3) CSRF scan
-4) Exit
-```
-
-Point it at a page with actual inputs, not a homepage — `https://target.com/search?q=test` or a login page, not `https://target.com/`. Each scanner can also be run directly, non-interactively:
-
-```bash
-python UI/sqli_scan.py https://target.com/page?id=1
-python UI/xss_scan.py https://target.com/search?q=test
-python UI/csrf_scan.py https://target.com/account
-```
-
-All of these still require authorization confirmation (or `OWASP_INSPECTOR_AUTHORIZED=1`).
-
 ## Troubleshooting
 
 **"0 findings" almost always means the wrong URL, not a broken scanner.** Homepages and marketing pages typically have no injectable parameters; production targets are often already hardened. Point it at a page with real inputs — a search box, a form, a URL with query parameters.
 
-**The crawl found 0 pages / 0 targets.** Check whether `robots.txt` is disallowing everything (`Disallow: /`) — this shouldn't block the automated engine by default (`--respect-robots` is off unless you asked for it), but does affect the legacy menu's crawler and anyone using `--respect-robots` explicitly.
+**The crawl found 0 pages / 0 targets.** Check whether `robots.txt` is disallowing everything (`Disallow: /`) — this shouldn't block the scan by default (`--respect-robots` is off unless you asked for it), but does affect anyone using `--respect-robots` explicitly.
 
 **A scan against an old/internal server fails to connect at all.** The HTTP client deliberately supports weak/old TLS configurations (`SECLEVEL=0`) precisely so it can reach exactly this kind of authorized-but-outdated target; if it still can't connect, the target is likely unreachable from where the scan is running (network/firewall), not a TLS negotiation problem.
 
-**A module found nothing but I expected a finding.** Check whether it's one of the modules with known deferred scope — see [Architecture](ARCHITECTURE.md#sqli-xss-csrf-whats-native-whats-deferred) for exactly what each of SQLi/XSS/CSRF does and doesn't cover in the automated engine, and use the legacy menu for the rest.
+**A module found nothing but I expected a finding.** Check whether it's one of the modules with known scope limits — see [Architecture](ARCHITECTURE.md#sqli-xss-csrf-whats-covered-what-isnt) for exactly what each of SQLi/XSS/CSRF does and doesn't cover.
 
 **The scan seems slow / is generating too much traffic.** Use `--profile stealth` for a rate-limited or fragile target, or `--max-pages` to cap the crawl.
 

@@ -79,11 +79,8 @@ jobs:
           cache: pip
       - run: pip install pip-audit
       - run: pip install -e .
-      # Advisory only: this is a security-testing tool whose own
-      # dependency tree includes intentionally offensive/dual-use
-      # libraries (e.g. optional headless-browser WAF bypass) that can
-      # trip false-positive advisories unrelated to actual exploitability
-      # here. Findings are surfaced in the log, not used to fail the build.
+      # Advisory only for now — surfaced in the log, not used to fail the
+      # build. The dependency tree itself is clean as of this writing.
       - run: pip-audit --desc || true
 
   gitleaks:

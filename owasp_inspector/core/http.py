@@ -8,9 +8,6 @@ import httpx
 
 from owasp_inspector.core.ratelimit import RateLimiter
 
-# Duplicates Logic/user_agents.py deliberately: this package must not depend on
-# the legacy sys.path-hacked `Logic/` modules. The two lists merge when the
-# legacy scanners migrate into owasp_inspector/modules/ in Phase 5.
 UA_POOL = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",

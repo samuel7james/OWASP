@@ -17,14 +17,7 @@ htmlcov
 
 tests
 scripts
-PROJECT_PLAN.md
-TASKS.md
 
-Data/sqli_scan_results
-Data/xss_scan_results
-Data/csrf_scan_results
-Data/Parameters
 Data/reports
 Data/scan_history
 Data/scan_cache
-Logic/Data

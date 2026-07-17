@@ -5,8 +5,7 @@ latency. Run it yourself:
 
     python scripts/benchmark_discovery.py [page_count]
 
-Baseline recorded in TASKS.md (Phase 8), measured with the wave-concurrent
-crawl (see discovery/crawl.py):
+Baseline, measured with the wave-concurrent crawl (see discovery/crawl.py):
 
     300 pages:  ~1.4s,  peak ~2.1 MiB traced  (~7.3 KiB/page)
     1000 pages: ~4.8s,  peak ~3.3 MiB traced  (~3.4 KiB/page, sub-linear —

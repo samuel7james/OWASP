@@ -7,8 +7,6 @@ from pathlib import Path
 from owasp_inspector.core.http import AsyncHttpClient
 from owasp_inspector.discovery.models import Fingerprint
 
-# Reuses the existing signature corpus (Data/Payloads/csrf_payloads/framework_signatures.json)
-# rather than duplicating it — it's just data, so no coupling to the legacy Logic/ code.
 # parents[2]: discovery/ -> owasp_inspector/ -> repo root. Holds for an editable/source
 # checkout; a future packaged distribution will need this data shipped as package data.
 _SIGNATURES_FILE = (

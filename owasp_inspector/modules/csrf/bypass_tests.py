@@ -6,25 +6,22 @@ from collections import Counter
 from owasp_inspector.modules.csrf.context import CsrfContext
 from owasp_inspector.modules.csrf.patterns import NON_STATE_CHANGING_PATHS
 
-"""Async port of the 10 core, single-session bypass tests from
-Logic/vulnerability_scan/csrf/bypass_strategies.py. Each function mirrors
-its legacy class's `test()` method line-for-line (request shape, ordering,
-evidence text) with two changes applied uniformly: the I/O is native async,
-and every test now fetches and passes a baseline to `is_action_successful`
-(the legacy engine only did this for 2 of the 15 tests — see context.py's
-docstring for why that mattered).
+"""The 10 core, single-session CSRF bypass tests this module implements,
+each fetching and passing a baseline to `is_action_successful` before
+declaring a bypass confirmed (see context.py's docstring for why that
+baseline check matters).
 
-Not ported (documented, not silently dropped):
-- CrossSessionTokenTest, NonSessionCookieTokenTest: require a second
-  authenticated session via the legacy Authenticator, which itself assumes
-  a fixed `/login` path unrelated to this engine's discovery-driven design.
-  A generic auto-login flow is a real feature to build, not a mechanical
-  port.
-- TokenReuseTest, CustomHeaderBypassTest: require performing the real
+Deliberately not implemented (documented, not silently dropped):
+- A cross-session / non-session-cookie token bypass: needs a second
+  authenticated session, which needs a generic auto-login flow — a real
+  feature to build, not a small addition to what's here.
+- A token-reuse / custom-header bypass: requires performing the real
   state-changing action twice in sequence to compare outcomes — a
-  meaningfully different risk/write profile than the other tests here,
-  worth scoping as its own follow-up rather than folding in silently.
-All four remain available via `owasp-inspector-legacy-menu`.
+  meaningfully different risk/write profile than the tests here, worth
+  scoping as its own follow-up.
+- Broader SameSite/Referer/CORS/CRLF/clickjacking/token-leakage checks —
+  each a substantially larger, more specialized subsystem than
+  token-validation bypasses.
 """
 
 
