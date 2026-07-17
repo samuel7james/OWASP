@@ -49,6 +49,12 @@ class ParamTarget:
     url: str
     params: list[str] = field(default_factory=list)
     defaults: dict[str, str] = field(default_factory=dict)
+    # True when this target came from an actual <form> element (regardless
+    # of its method) rather than a query string seen on a crawled link.
+    # Needed by CSRF: a GET-method *form* (DVWA's own CSRF lab uses one) is a
+    # deliberate state-changing action worth testing, but a bare "?page=2"
+    # link is not — and both produce a method="get" ParamTarget.
+    is_form: bool = False
 
 
 @dataclass

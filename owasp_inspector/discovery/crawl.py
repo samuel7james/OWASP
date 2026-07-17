@@ -58,7 +58,10 @@ def _extract_forms(html: str, page_url: str) -> list[ParamTarget]:
         params = list(dict.fromkeys(params))
         if params:
             targets.append(
-                ParamTarget(method="post" if method == "post" else "get", url=action_url, params=params, defaults=defaults)
+                ParamTarget(
+                    method="post" if method == "post" else "get", url=action_url,
+                    params=params, defaults=defaults, is_form=True,
+                )
             )
     return targets
 

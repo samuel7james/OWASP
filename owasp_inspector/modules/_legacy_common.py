@@ -16,9 +16,11 @@ _CONFIDENCE_BY_RAW = {
 
 
 def convert_legacy_finding(raw: dict, *, module: str, owasp_category: str, target_url: str) -> Finding:
-    """Convert one of the legacy SQLi/XSS/CSRF engines' dict findings (already
-    passed through vulnerability_scan.findings.normalize_finding, so `status`
-    and `confidence` are guaranteed present) into the new Finding model.
+    """Convert a raw finding dict — in the same `type`/`parameter`/`evidence`/
+    `confidence`/`status`/`url`-or-`form_url` shape the legacy SQLi/XSS/CSRF
+    engines used — into the new Finding model. `status` defaults to
+    "candidate" when absent (the CSRF bypass tests never set it, only
+    `confidence`), which correctly maps to `manual_verification_recommended`.
     """
     status = raw.get("status", "candidate")
     confidence_raw = raw.get("confidence", "medium")
