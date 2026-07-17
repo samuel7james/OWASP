@@ -34,6 +34,9 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools.packages.find]
 include = ["owasp_inspector*"]
 
+[tool.setuptools.package-data]
+owasp_inspector = ["reporting/templates/*.jinja2"]
+
 [tool.ruff]
 line-length = 120
 target-version = "py310"
